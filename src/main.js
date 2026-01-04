@@ -3,6 +3,8 @@
  */
 
 import './styles/main.css';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
 
 import { checkCompatibility, renderIncompatibleScreen } from './lib/compatibility.js';
 import { signIn, signUp, getSession, getPlayer, createPlayer, onAuthStateChange } from './lib/supabase.js';
@@ -13,7 +15,7 @@ import { gameState, setPlayer, setScreen, startCombat, endCombat, addXP, getClas
 import { playerAttack, monsterAttack, isMonsterDefeated, isPlayerDefeated, castDamageSpell, useHealingPotion, attemptFlee } from './game/combat.js';
 import { generateLoot, getRarityColor } from './data/items.js';
 
-// Leaflet será carregado via CDN
+// Leaflet map instance
 let map = null;
 let playerMarker = null;
 let monsterMarkers = [];
@@ -63,6 +65,7 @@ async function init() {
     // 3. Setup de listeners
     setupAuthListeners();
     setupUIListeners();
+    setupCompass();
 
     // 4. Observar mudanças de autenticação
     onAuthStateChange((event, session) => {
@@ -75,8 +78,64 @@ async function init() {
 }
 
 /**
+ * Configura a bússola para rotacionar com a orientação do dispositivo
+ */
+function setupCompass() {
+    const compassArrow = document.querySelector('.compass-arrow');
+    const compass = document.getElementById('compass');
+
+    if (!compassArrow) return;
+
+    // Verifica se DeviceOrientationEvent precisa de permissão (iOS 13+)
+    if (typeof DeviceOrientationEvent !== 'undefined' &&
+        typeof DeviceOrientationEvent.requestPermission === 'function') {
+        // iOS 13+ precisa de permissão
+        compass?.addEventListener('click', async () => {
+            try {
+                const permission = await DeviceOrientationEvent.requestPermission();
+                if (permission === 'granted') {
+                    startCompassUpdates(compassArrow);
+                }
+            } catch (err) {
+                console.error('Erro ao solicitar permissão de orientação:', err);
+            }
+        });
+    } else {
+        // Android e outros navegadores
+        startCompassUpdates(compassArrow);
+    }
+}
+
+/**
+ * Inicia atualizações da bússola
+ * @param {HTMLElement} compassArrow
+ */
+function startCompassUpdates(compassArrow) {
+    window.addEventListener('deviceorientationabsolute', (event) => {
+        if (event.alpha !== null) {
+            // alpha é a rotação em relação ao norte (0-360)
+            const heading = event.alpha;
+            compassArrow.style.transform = `rotate(${heading}deg)`;
+        }
+    }, true);
+
+    // Fallback para deviceorientation se absolute não estiver disponível
+    window.addEventListener('deviceorientation', (event) => {
+        if (event.webkitCompassHeading !== undefined) {
+            // Safari/iOS
+            const heading = event.webkitCompassHeading;
+            compassArrow.style.transform = `rotate(${-heading}deg)`;
+        } else if (event.alpha !== null) {
+            // Android Chrome
+            const heading = 360 - event.alpha;
+            compassArrow.style.transform = `rotate(${heading}deg)`;
+        }
+    }, true);
+}
+
+/**
  * Atualiza o status de loading
- * @param {string} message 
+ * @param {string} message
  */
 function updateLoadingStatus(message) {
     const statusEl = document.getElementById('loading-status');
@@ -274,7 +333,7 @@ async function initMap() {
     // Inicializa o Leaflet
     const mapContainer = document.getElementById('map-container');
 
-    if (!map && typeof L !== 'undefined') {
+    if (!map) {
         map = L.map(mapContainer, {
             zoomControl: false,
             attributionControl: false
@@ -376,7 +435,7 @@ function spawnMonstersInNearby(lat, lng) {
         // Cria marcador no mapa
         const cellCenter = getCellCenter(cellId);
 
-        if (typeof L !== 'undefined' && map) {
+        if (map) {
             const monsterIcon = L.divIcon({
                 className: `monster-marker ${monster.isBoss ? 'boss' : ''}`,
                 html: monster.emoji,

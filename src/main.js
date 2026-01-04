@@ -919,7 +919,7 @@ function selectInventoryItem(invItem) {
  */
 function openCharacterScreen() {
     updateCharacterScreen();
-    setScreen('character-screen-panel');
+    setScreen('character-panel');
 }
 
 /**

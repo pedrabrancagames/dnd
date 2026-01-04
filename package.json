@@ -1,0 +1,21 @@
+{
+  "name": "dd-ar-game",
+  "version": "0.1.0",
+  "description": "Jogo AR Multiplayer inspirado em D&D",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "leaflet": "^1.9.4",
+    "three": "^0.170.0"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0",
+    "@vite-pwa/assets-generator": "^0.2.6",
+    "vite-plugin-pwa": "^0.21.0"
+  }
+}

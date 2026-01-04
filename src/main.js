@@ -1,0 +1,680 @@
+/**
+ * D&D AR Adventure - Main Entry Point
+ */
+
+import './styles/main.css';
+
+import { checkCompatibility, renderIncompatibleScreen } from './lib/compatibility.js';
+import { signIn, signUp, getSession, getPlayer, createPlayer, onAuthStateChange } from './lib/supabase.js';
+import { getCurrentPosition, startWatching, onPositionChange } from './lib/gps.js';
+import { getCellId, getNearbyCells, getCellBiome, getCellCenter } from './lib/cells.js';
+import { getMonstersByBiome, getMonstersByCR, selectRandomMonster, createMonsterInstance } from './data/monsters.js';
+import { gameState, setPlayer, setScreen, startCombat, endCombat, addXP, getClassIcon, updateDerivedStats } from './game/state.js';
+import { playerAttack, monsterAttack, isMonsterDefeated, isPlayerDefeated, castDamageSpell, useHealingPotion, attemptFlee } from './game/combat.js';
+import { generateLoot, getRarityColor } from './data/items.js';
+
+// Leaflet será carregado via CDN
+let map = null;
+let playerMarker = null;
+let monsterMarkers = [];
+
+/**
+ * Inicializa a aplicação
+ */
+async function init() {
+    console.log('🎮 Iniciando D&D AR Adventure...');
+
+    updateLoadingStatus('Verificando compatibilidade...');
+
+    // 1. Verificação de compatibilidade
+    const compatibility = await checkCompatibility();
+
+    if (!compatibility.passed) {
+        console.warn('❌ Dispositivo incompatível');
+        renderIncompatibleScreen(compatibility.results);
+        setScreen('incompatible');
+        return;
+    }
+
+    console.log('✅ Dispositivo compatível');
+    updateLoadingStatus('Verificando sessão...');
+
+    // 2. Verificar sessão existente
+    const { session, user } = await getSession();
+
+    if (session && user) {
+        console.log('✅ Sessão encontrada:', user.email);
+        gameState.user = user;
+
+        // Busca dados do jogador
+        const { player } = await getPlayer(user.id);
+
+        if (player) {
+            setPlayer(player);
+            await initMap();
+        } else {
+            setScreen('character');
+        }
+    } else {
+        console.log('ℹ️ Sem sessão ativa');
+        setScreen('login');
+    }
+
+    // 3. Setup de listeners
+    setupAuthListeners();
+    setupUIListeners();
+
+    // 4. Observar mudanças de autenticação
+    onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_OUT') {
+            gameState.user = null;
+            gameState.player = null;
+            setScreen('login');
+        }
+    });
+}
+
+/**
+ * Atualiza o status de loading
+ * @param {string} message 
+ */
+function updateLoadingStatus(message) {
+    const statusEl = document.getElementById('loading-status');
+    if (statusEl) {
+        statusEl.textContent = message;
+    }
+}
+
+/**
+ * Configura listeners de autenticação
+ */
+function setupAuthListeners() {
+    // Tabs de login/registro
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tab = btn.dataset.tab;
+
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+            document.getElementById(`${tab}-form`).classList.add('active');
+        });
+    });
+
+    // Formulário de login
+    document.getElementById('login-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const email = document.getElementById('login-email').value;
+        const password = document.getElementById('login-password').value;
+        const errorEl = document.getElementById('login-error');
+
+        errorEl.textContent = 'Entrando...';
+
+        const { user, error } = await signIn(email, password);
+
+        if (error) {
+            errorEl.textContent = error;
+            return;
+        }
+
+        gameState.user = user;
+
+        const { player } = await getPlayer(user.id);
+
+        if (player) {
+            setPlayer(player);
+            await initMap();
+        } else {
+            setScreen('character');
+        }
+    });
+
+    // Formulário de registro
+    document.getElementById('register-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const name = document.getElementById('register-name').value;
+        const email = document.getElementById('register-email').value;
+        const password = document.getElementById('register-password').value;
+        const errorEl = document.getElementById('register-error');
+
+        errorEl.textContent = 'Criando conta...';
+
+        const { user, error } = await signUp(email, password, name);
+
+        if (error) {
+            errorEl.textContent = error;
+            return;
+        }
+
+        gameState.user = user;
+        setScreen('character');
+    });
+}
+
+/**
+ * Configura listeners de UI
+ */
+function setupUIListeners() {
+    // Seleção de classe
+    document.querySelectorAll('.class-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.class-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            document.getElementById('create-character-btn').disabled = false;
+        });
+    });
+
+    // Criar personagem
+    document.getElementById('character-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const selectedClass = document.querySelector('.class-btn.selected')?.dataset.class;
+        if (!selectedClass || !gameState.user) return;
+
+        const playerData = {
+            id: gameState.user.id,
+            name: gameState.user.user_metadata?.name || 'Aventureiro',
+            class: selectedClass,
+            level: 1,
+            xp: 0,
+            str: 10,
+            dex: 10,
+            con: 10,
+            int: 10,
+            wis: 10,
+            cha: 10,
+            gold: 0
+        };
+
+        // Bônus por classe
+        switch (selectedClass) {
+            case 'warrior':
+                playerData.str = 14;
+                playerData.con = 12;
+                break;
+            case 'mage':
+                playerData.int = 14;
+                playerData.wis = 12;
+                break;
+            case 'archer':
+                playerData.dex = 14;
+                playerData.wis = 12;
+                break;
+            case 'cleric':
+                playerData.wis = 14;
+                playerData.cha = 12;
+                break;
+        }
+
+        const { player, error } = await createPlayer(playerData);
+
+        if (error) {
+            console.error('Erro ao criar personagem:', error);
+            // Fallback: usar dados locais
+            setPlayer(playerData);
+        } else {
+            setPlayer(player);
+        }
+
+        await initMap();
+    });
+
+    // Botão entrar em AR
+    document.getElementById('enter-ar-btn')?.addEventListener('click', () => {
+        if (!gameState.currentMonster) return;
+        startARCombat();
+    });
+
+    // Botões de ação AR
+    document.getElementById('attack-btn')?.addEventListener('click', handleAttack);
+    document.getElementById('spell-btn')?.addEventListener('click', handleSpell);
+    document.getElementById('item-btn')?.addEventListener('click', handleItem);
+    document.getElementById('flee-btn')?.addEventListener('click', handleFlee);
+
+    // Botão continuar (vitória)
+    document.getElementById('continue-btn')?.addEventListener('click', () => {
+        endCombat();
+        setScreen('map');
+        updateMapHUD();
+    });
+
+    // Botão respawn (derrota)
+    document.getElementById('respawn-btn')?.addEventListener('click', () => {
+        // Penalidade de XP
+        if (gameState.player) {
+            const xpPenalty = Math.floor(gameState.player.xp * 0.1);
+            gameState.player.xp = Math.max(0, gameState.player.xp - xpPenalty);
+            gameState.player.currentHp = gameState.player.maxHp;
+            gameState.player.currentMana = gameState.player.maxMana;
+        }
+
+        endCombat();
+        setScreen('map');
+        updateMapHUD();
+    });
+}
+
+/**
+ * Inicializa o mapa
+ */
+async function initMap() {
+    setScreen('map');
+
+    // Obtém posição inicial
+    const position = await getCurrentPosition(true);
+
+    if (!position) {
+        console.error('Não foi possível obter a localização');
+        return;
+    }
+
+    // Inicializa o Leaflet
+    const mapContainer = document.getElementById('map-container');
+
+    if (!map && typeof L !== 'undefined') {
+        map = L.map(mapContainer, {
+            zoomControl: false,
+            attributionControl: false
+        }).setView([position.lat, position.lng], 18);
+
+        // Tile layer dark
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            maxZoom: 19
+        }).addTo(map);
+
+        // Marcador do jogador
+        const playerIcon = L.divIcon({
+            className: 'player-marker',
+            iconSize: [40, 40],
+            iconAnchor: [20, 20]
+        });
+
+        playerMarker = L.marker([position.lat, position.lng], { icon: playerIcon }).addTo(map);
+    }
+
+    // Atualiza HUD
+    updateMapHUD();
+
+    // Spawn monstros iniciais
+    spawnMonstersInNearby(position.lat, position.lng);
+
+    // Começa a monitorar posição
+    startWatching(true);
+    onPositionChange((coords) => {
+        if (map && playerMarker) {
+            playerMarker.setLatLng([coords.lat, coords.lng]);
+            map.panTo([coords.lat, coords.lng]);
+
+            // Atualiza célula atual e spawna monstros
+            const newCellId = getCellId(coords.lat, coords.lng);
+            if (gameState.currentCell?.id !== newCellId) {
+                gameState.currentCell = {
+                    id: newCellId,
+                    biome: getCellBiome(newCellId, coords.lat, coords.lng)
+                };
+                spawnMonstersInNearby(coords.lat, coords.lng);
+            }
+        }
+    });
+}
+
+/**
+ * Atualiza o HUD do mapa
+ */
+function updateMapHUD() {
+    if (!gameState.player) return;
+
+    const player = gameState.player;
+
+    document.getElementById('player-name').textContent = player.name;
+    document.getElementById('player-level').textContent = `Nível ${player.level}`;
+    document.getElementById('player-avatar').textContent = getClassIcon(player.class);
+}
+
+/**
+ * Spawna monstros nas células próximas
+ * @param {number} lat 
+ * @param {number} lng 
+ */
+function spawnMonstersInNearby(lat, lng) {
+    const currentCellId = getCellId(lat, lng);
+    const nearbyCells = getNearbyCells(currentCellId, 2);
+
+    // Remove marcadores antigos
+    monsterMarkers.forEach(marker => {
+        if (map) map.removeLayer(marker);
+    });
+    monsterMarkers = [];
+    gameState.nearbyMonsters = [];
+
+    // Spawna monstros em cada célula
+    nearbyCells.forEach(cellId => {
+        if (cellId === currentCellId) return; // Não spawna na célula do jogador
+
+        // Usa hash do cellId como seed para consistência
+        const hash = hashCode(cellId + Date.now().toString().slice(0, -4));
+        if (Math.abs(hash) % 3 !== 0) return; // ~33% de chance de ter monstro
+
+        const biome = getCellBiome(cellId, lat, lng);
+        const maxCR = gameState.player ? gameState.player.level / 2 : 1;
+
+        let pool = getMonstersByBiome(biome).filter(m => m.cr <= maxCR);
+        if (pool.length === 0) {
+            pool = getMonstersByCR(maxCR);
+        }
+
+        if (pool.length === 0) return;
+
+        const template = selectRandomMonster(pool);
+        const monster = createMonsterInstance(template, cellId);
+
+        gameState.nearbyMonsters.push(monster);
+
+        // Cria marcador no mapa
+        const cellCenter = getCellCenter(cellId);
+
+        if (typeof L !== 'undefined' && map) {
+            const monsterIcon = L.divIcon({
+                className: `monster-marker ${monster.isBoss ? 'boss' : ''}`,
+                html: monster.emoji,
+                iconSize: [36, 36],
+                iconAnchor: [18, 18]
+            });
+
+            const marker = L.marker([cellCenter.lat, cellCenter.lng], { icon: monsterIcon })
+                .addTo(map)
+                .on('click', () => selectMonster(monster));
+
+            monsterMarkers.push(marker);
+        }
+    });
+}
+
+/**
+ * Seleciona um monstro para combate
+ * @param {Object} monster 
+ */
+function selectMonster(monster) {
+    gameState.currentMonster = monster;
+
+    const panel = document.getElementById('monster-panel');
+    panel.classList.remove('hidden');
+
+    document.getElementById('monster-name').textContent = `${monster.emoji} ${monster.name}`;
+    document.getElementById('monster-hp').textContent = `HP: ${monster.currentHp}/${monster.maxHp}`;
+    document.getElementById('monster-level').textContent = `AC: ${monster.ac}`;
+}
+
+/**
+ * Inicia combate em AR
+ */
+function startARCombat() {
+    if (!gameState.currentMonster) return;
+
+    startCombat(gameState.currentMonster);
+    setScreen('ar');
+    updateARHUD();
+
+    // Esconde painel de monstro
+    document.getElementById('monster-panel')?.classList.add('hidden');
+
+    // Inicia turno do monstro periodicamente
+    startMonsterTurns();
+}
+
+/**
+ * Atualiza o HUD de AR
+ */
+function updateARHUD() {
+    if (!gameState.player || !gameState.currentMonster) return;
+
+    const player = gameState.player;
+    const monster = gameState.currentMonster;
+
+    // HP/Mana do jogador
+    const hpPercent = (player.currentHp / player.maxHp) * 100;
+    const manaPercent = (player.currentMana / player.maxMana) * 100;
+
+    document.getElementById('ar-hp-fill').style.width = `${hpPercent}%`;
+    document.getElementById('ar-hp-value').textContent = `${player.currentHp}/${player.maxHp}`;
+    document.getElementById('ar-mana-fill').style.width = `${manaPercent}%`;
+    document.getElementById('ar-mana-value').textContent = `${player.currentMana}/${player.maxMana}`;
+
+    // HP do monstro
+    const monsterHpPercent = (monster.currentHp / monster.maxHp) * 100;
+    document.getElementById('ar-monster-name').textContent = `${monster.emoji} ${monster.name}`;
+    document.getElementById('ar-monster-hp-fill').style.width = `${monsterHpPercent}%`;
+}
+
+/**
+ * Mostra popup de dano
+ * @param {number} damage 
+ * @param {string} type 
+ * @param {boolean} isCritical 
+ */
+function showDamagePopup(damage, type = 'normal', isCritical = false) {
+    const container = document.getElementById('damage-popups');
+    if (!container) return;
+
+    const popup = document.createElement('div');
+    popup.className = `damage-popup ${type} ${isCritical ? 'critical' : ''}`;
+    popup.textContent = type === 'miss' ? 'MISS' : (type === 'heal' ? `+${damage}` : `-${damage}`);
+
+    // Posição aleatória no centro
+    popup.style.left = `${40 + Math.random() * 20}%`;
+    popup.style.top = `${30 + Math.random() * 20}%`;
+
+    container.appendChild(popup);
+
+    setTimeout(() => popup.remove(), 1000);
+}
+
+/**
+ * Mostra mensagem no AR
+ * @param {string} message 
+ */
+function showARMessage(message) {
+    const container = document.getElementById('ar-messages');
+    if (!container) return;
+
+    const msg = document.createElement('div');
+    msg.className = 'ar-message';
+    msg.textContent = message;
+
+    container.appendChild(msg);
+
+    setTimeout(() => msg.remove(), 1500);
+}
+
+/**
+ * Inicia turnos do monstro
+ */
+let monsterTurnInterval = null;
+
+function startMonsterTurns() {
+    if (monsterTurnInterval) {
+        clearInterval(monsterTurnInterval);
+    }
+
+    monsterTurnInterval = setInterval(() => {
+        if (!gameState.inCombat || !gameState.currentMonster) {
+            clearInterval(monsterTurnInterval);
+            return;
+        }
+
+        // Monstro ataca
+        const result = monsterAttack();
+        if (result) {
+            if (result.hit) {
+                showDamagePopup(result.damage, result.isCritical ? 'critical' : 'normal', result.isCritical);
+            } else {
+                showDamagePopup(0, 'miss');
+            }
+
+            updateARHUD();
+
+            // Verifica se jogador morreu
+            if (isPlayerDefeated()) {
+                clearInterval(monsterTurnInterval);
+                handleDefeat();
+            }
+        }
+    }, 3500); // Monstro ataca a cada 3.5 segundos
+}
+
+/**
+ * Handler de ataque do jogador
+ */
+function handleAttack() {
+    const result = playerAttack();
+    if (!result) return;
+
+    if (result.hit) {
+        showDamagePopup(result.damage, result.isCritical ? 'critical' : 'fire', result.isCritical);
+        if (result.isCritical) {
+            showARMessage('CRÍTICO!');
+        }
+    } else {
+        showDamagePopup(0, 'miss');
+        if (result.isFumble) {
+            showARMessage('Falha Crítica!');
+        }
+    }
+
+    updateARHUD();
+
+    if (isMonsterDefeated()) {
+        clearInterval(monsterTurnInterval);
+        handleVictory();
+    }
+}
+
+/**
+ * Handler de magia
+ */
+function handleSpell() {
+    const result = castDamageSpell('fireBolt');
+    if (!result) return;
+
+    if (!result.success) {
+        showARMessage(result.message);
+        return;
+    }
+
+    if (result.hit) {
+        showDamagePopup(result.damage, result.spellType, false);
+    } else {
+        showDamagePopup(0, 'miss');
+    }
+
+    updateARHUD();
+
+    if (isMonsterDefeated()) {
+        clearInterval(monsterTurnInterval);
+        handleVictory();
+    }
+}
+
+/**
+ * Handler de item
+ */
+function handleItem() {
+    const result = useHealingPotion();
+    if (!result.success) {
+        showARMessage(result.message);
+        return;
+    }
+
+    showDamagePopup(result.healAmount, 'heal');
+    updateARHUD();
+}
+
+/**
+ * Handler de fuga
+ */
+function handleFlee() {
+    const result = attemptFlee();
+
+    showARMessage(result.message);
+
+    if (result.success) {
+        clearInterval(monsterTurnInterval);
+        endCombat();
+        setTimeout(() => setScreen('map'), 1000);
+    } else {
+        updateARHUD();
+
+        if (isPlayerDefeated()) {
+            clearInterval(monsterTurnInterval);
+            handleDefeat();
+        }
+    }
+}
+
+/**
+ * Handler de vitória
+ */
+function handleVictory() {
+    if (!gameState.currentMonster || !gameState.player) return;
+
+    const monster = gameState.currentMonster;
+
+    // Adiciona XP
+    const xpResult = addXP(monster.xp);
+
+    // Gera loot
+    const lootTable = monster.isBoss ? 'boss' : monster.xp > 100 ? 'rare' : 'common';
+    const loot = generateLoot(lootTable);
+
+    // Atualiza tela de vitória
+    document.getElementById('xp-gained').textContent = `+${monster.xp} XP${xpResult.leveledUp ? ` (Level Up! Nível ${xpResult.newLevel})` : ''}`;
+
+    const lootGrid = document.getElementById('loot-items');
+    lootGrid.innerHTML = '';
+
+    loot.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'loot-item';
+
+        if (item.type === 'gold') {
+            div.textContent = `💰 ${item.amount}`;
+            div.style.borderColor = 'var(--color-accent-gold)';
+        } else if (item.item) {
+            div.textContent = '📦';
+            div.style.borderColor = getRarityColor(item.item.rarity);
+            div.title = item.item.namePt;
+        }
+
+        lootGrid.appendChild(div);
+    });
+
+    setScreen('victory');
+}
+
+/**
+ * Handler de derrota
+ */
+function handleDefeat() {
+    setScreen('defeat');
+}
+
+/**
+ * Hash simples de string
+ * @param {string} str 
+ * @returns {number}
+ */
+function hashCode(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash;
+    }
+    return hash;
+}
+
+// Inicia a aplicação quando o DOM estiver pronto
+document.addEventListener('DOMContentLoaded', init);

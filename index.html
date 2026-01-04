@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+  <meta name="theme-color" content="#1a1a2e">
+  <meta name="description" content="Jogo de RPG em Realidade Aumentada inspirado em Dungeons & Dragons">
+  
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" 
+        crossorigin="">
+  
+  <title>D&D AR Adventure</title>
+  <link rel="stylesheet" href="/src/styles/main.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="screen active">
+      <div class="loading-content">
+        <div class="loading-spinner"></div>
+        <h1>D&D AR Adventure</h1>
+        <p id="loading-status">Verificando compatibilidade...</p>
+      </div>
+    </div>
+
+    <!-- Incompatible Screen -->
+    <div id="incompatible-screen" class="screen">
+      <div class="incompatible-content">
+        <div class="warning-icon">⚠️</div>
+        <h1>Aparelho Incompatível</h1>
+        <p>Seu dispositivo não suporta os recursos necessários para jogar.</p>
+        <div id="failed-requirements" class="requirements-list"></div>
+        <div class="compatible-devices">
+          <h3>Dispositivos compatíveis:</h3>
+          <ul>
+            <li>Samsung Galaxy S8 ou superior</li>
+            <li>Google Pixel 2 ou superior</li>
+            <li>Xiaomi Mi 9 ou superior</li>
+            <li>OnePlus 6 ou superior</li>
+          </ul>
+          <a href="https://developers.google.com/ar/devices" target="_blank" class="btn-link">
+            Lista completa de dispositivos ARCore
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Login Screen -->
+    <div id="login-screen" class="screen">
+      <div class="login-container">
+        <h1>D&D AR Adventure</h1>
+        <div class="login-tabs">
+          <button class="tab-btn active" data-tab="login">Entrar</button>
+          <button class="tab-btn" data-tab="register">Cadastrar</button>
+        </div>
+        
+        <form id="login-form" class="auth-form active">
+          <div class="form-group">
+            <label for="login-email">Email</label>
+            <input type="email" id="login-email" required autocomplete="email">
+          </div>
+          <div class="form-group">
+            <label for="login-password">Senha</label>
+            <input type="password" id="login-password" required autocomplete="current-password">
+          </div>
+          <button type="submit" class="btn-primary">Entrar</button>
+          <p id="login-error" class="error-message"></p>
+        </form>
+        
+        <form id="register-form" class="auth-form">
+          <div class="form-group">
+            <label for="register-name">Nome do Aventureiro</label>
+            <input type="text" id="register-name" required minlength="3" maxlength="20">
+          </div>
+          <div class="form-group">
+            <label for="register-email">Email</label>
+            <input type="email" id="register-email" required autocomplete="email">
+          </div>
+          <div class="form-group">
+            <label for="register-password">Senha</label>
+            <input type="password" id="register-password" required minlength="6" autocomplete="new-password">
+          </div>
+          <button type="submit" class="btn-primary">Criar Conta</button>
+          <p id="register-error" class="error-message"></p>
+        </form>
+      </div>
+    </div>
+
+    <!-- Character Creation Screen -->
+    <div id="character-screen" class="screen">
+      <div class="character-container">
+        <h1>Crie seu Personagem</h1>
+        <form id="character-form">
+          <div class="class-selection">
+            <h2>Escolha sua Classe</h2>
+            <div class="class-grid">
+              <button type="button" class="class-btn" data-class="warrior">
+                <span class="class-icon">⚔️</span>
+                <span class="class-name">Guerreiro</span>
+                <span class="class-desc">Alto HP, tanque</span>
+              </button>
+              <button type="button" class="class-btn" data-class="mage">
+                <span class="class-icon">🔮</span>
+                <span class="class-name">Mago</span>
+                <span class="class-desc">Alto dano mágico</span>
+              </button>
+              <button type="button" class="class-btn" data-class="archer">
+                <span class="class-icon">🏹</span>
+                <span class="class-name">Arqueiro</span>
+                <span class="class-desc">Críticos devastadores</span>
+              </button>
+              <button type="button" class="class-btn" data-class="cleric">
+                <span class="class-icon">✨</span>
+                <span class="class-name">Clérigo</span>
+                <span class="class-desc">Suporte e cura</span>
+              </button>
+            </div>
+          </div>
+          <button type="submit" class="btn-primary" id="create-character-btn" disabled>
+            Começar Aventura
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Map Screen -->
+    <div id="map-screen" class="screen">
+      <div id="map-container"></div>
+      <div id="map-hud">
+        <div class="player-info">
+          <div class="player-avatar" id="player-avatar">⚔️</div>
+          <div class="player-stats">
+            <span id="player-name">Aventureiro</span>
+            <span id="player-level">Nível 1</span>
+          </div>
+        </div>
+        <div class="compass" id="compass">
+          <span class="compass-arrow">↑</span>
+          <span class="compass-label">N</span>
+        </div>
+      </div>
+      <div id="monster-panel" class="panel hidden">
+        <div class="panel-content">
+          <h3 id="monster-name">Goblin</h3>
+          <div class="monster-stats">
+            <span id="monster-hp">HP: 7/7</span>
+            <span id="monster-level">CR: 1/4</span>
+          </div>
+          <button id="enter-ar-btn" class="btn-primary">Entrar em Combate AR</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- AR Screen -->
+    <div id="ar-screen" class="screen">
+      <div id="ar-hud">
+        <div class="ar-player-stats">
+          <div class="stat-bar hp-bar">
+            <span class="stat-label">HP</span>
+            <div class="bar-container">
+              <div class="bar-fill" id="ar-hp-fill"></div>
+            </div>
+            <span class="stat-value" id="ar-hp-value">100/100</span>
+          </div>
+          <div class="stat-bar mana-bar">
+            <span class="stat-label">Mana</span>
+            <div class="bar-container">
+              <div class="bar-fill" id="ar-mana-fill"></div>
+            </div>
+            <span class="stat-value" id="ar-mana-value">50/50</span>
+          </div>
+        </div>
+        
+        <div class="ar-monster-info" id="ar-monster-info">
+          <h3 id="ar-monster-name">Goblin</h3>
+          <div class="monster-hp-bar">
+            <div class="bar-fill" id="ar-monster-hp-fill"></div>
+          </div>
+        </div>
+        
+        <div class="ar-actions">
+          <button class="action-btn" id="attack-btn" data-action="attack">
+            <span class="action-icon">⚔️</span>
+            <span class="action-name">Atacar</span>
+          </button>
+          <button class="action-btn" id="spell-btn" data-action="spell">
+            <span class="action-icon">🔮</span>
+            <span class="action-name">Magia</span>
+          </button>
+          <button class="action-btn" id="item-btn" data-action="item">
+            <span class="action-icon">🧪</span>
+            <span class="action-name">Item</span>
+          </button>
+          <button class="action-btn" id="flee-btn" data-action="flee">
+            <span class="action-icon">🏃</span>
+            <span class="action-name">Fugir</span>
+          </button>
+        </div>
+      </div>
+      
+      <div id="damage-popups"></div>
+      <div id="ar-messages"></div>
+    </div>
+
+    <!-- Victory Screen -->
+    <div id="victory-screen" class="screen overlay">
+      <div class="victory-content">
+        <h1>Vitória!</h1>
+        <div id="loot-container">
+          <h2>Recompensas</h2>
+          <div id="xp-gained" class="reward">+0 XP</div>
+          <div id="loot-items" class="loot-grid"></div>
+        </div>
+        <button id="continue-btn" class="btn-primary">Continuar</button>
+      </div>
+    </div>
+
+    <!-- Defeat Screen -->
+    <div id="defeat-screen" class="screen overlay">
+      <div class="defeat-content">
+        <h1>Derrotado...</h1>
+        <p>Você foi incapacitado em combate.</p>
+        <p class="penalty">-10% XP do nível atual</p>
+        <button id="respawn-btn" class="btn-primary">Reviver no Santuário</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

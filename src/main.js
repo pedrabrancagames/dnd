@@ -14,6 +14,7 @@ import { getMonstersByBiome, getMonstersByCR, selectRandomMonster, createMonster
 import { gameState, setPlayer, setScreen, startCombat, endCombat, addXP, getClassIcon, updateDerivedStats } from './game/state.js';
 import { playerAttack, monsterAttack, isMonsterDefeated, isPlayerDefeated, castDamageSpell, useHealingPotion, attemptFlee } from './game/combat.js';
 import { generateLoot, getRarityColor } from './data/items.js';
+import { startARSession, endARSession, showMonsterDamageEffect, showMonsterDeathEffect, isARSessionActive } from './ar/ar-manager.js';
 
 // Leaflet map instance
 let map = null;
@@ -470,15 +471,34 @@ function selectMonster(monster) {
 /**
  * Inicia combate em AR
  */
-function startARCombat() {
+async function startARCombat() {
     if (!gameState.currentMonster) return;
+
+    // Esconde painel de monstro
+    document.getElementById('monster-panel')?.classList.add('hidden');
+
+    // Tenta iniciar sessão AR
+    const arStarted = await startARSession({
+        onPlaced: () => {
+            console.log('Monstro posicionado em AR');
+        },
+        onEnd: () => {
+            console.log('Sessão AR encerrada');
+            if (gameState.inCombat) {
+                // Se ainda em combate, volta para o mapa
+                endCombat();
+                setScreen('map');
+            }
+        }
+    });
+
+    if (!arStarted) {
+        console.warn('Não foi possível iniciar AR, usando modo 2D');
+    }
 
     startCombat(gameState.currentMonster);
     setScreen('ar');
     updateARHUD();
-
-    // Esconde painel de monstro
-    document.getElementById('monster-panel')?.classList.add('hidden');
 
     // Inicia turno do monstro periodicamente
     startMonsterTurns();
@@ -593,6 +613,8 @@ function handleAttack() {
 
     if (result.hit) {
         showDamagePopup(result.damage, result.isCritical ? 'critical' : 'fire', result.isCritical);
+        // Efeito visual no monstro 3D
+        showMonsterDamageEffect(result.damage, result.isCritical);
         if (result.isCritical) {
             showARMessage('CRÍTICO!');
         }
@@ -607,7 +629,9 @@ function handleAttack() {
 
     if (isMonsterDefeated()) {
         clearInterval(monsterTurnInterval);
-        handleVictory();
+        // Efeito de morte do monstro
+        showMonsterDeathEffect();
+        setTimeout(handleVictory, 1200);
     }
 }
 
@@ -676,10 +700,15 @@ function handleFlee() {
 /**
  * Handler de vitória
  */
-function handleVictory() {
+async function handleVictory() {
     if (!gameState.currentMonster || !gameState.player) return;
 
     const monster = gameState.currentMonster;
+
+    // Encerra sessão AR
+    if (isARSessionActive()) {
+        await endARSession();
+    }
 
     // Adiciona XP
     const xpResult = addXP(monster.xp);
@@ -716,7 +745,11 @@ function handleVictory() {
 /**
  * Handler de derrota
  */
-function handleDefeat() {
+async function handleDefeat() {
+    // Encerra sessão AR
+    if (isARSessionActive()) {
+        await endARSession();
+    }
     setScreen('defeat');
 }
 

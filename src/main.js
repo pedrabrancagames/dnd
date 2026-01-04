@@ -25,6 +25,20 @@ let playerMarker = null;
 let monsterMarkers = [];
 
 /**
+ * Volta para a tela do mapa e força recálculo do tamanho do Leaflet
+ */
+function goToMap() {
+    setScreen('map');
+    // Força Leaflet a recalcular tamanho após a tela ficar visível
+    setTimeout(() => {
+        if (map) {
+            map.invalidateSize();
+        }
+    }, 100);
+    updateMapHUD();
+}
+
+/**
  * Inicializa a aplicação
  */
 async function init() {
@@ -300,8 +314,7 @@ function setupUIListeners() {
     // Botão continuar (vitória)
     document.getElementById('continue-btn')?.addEventListener('click', () => {
         endCombat();
-        setScreen('map');
-        updateMapHUD();
+        goToMap();
     });
 
     // Botão respawn (derrota)
@@ -315,8 +328,7 @@ function setupUIListeners() {
         }
 
         endCombat();
-        setScreen('map');
-        updateMapHUD();
+        goToMap();
     });
 
     // Botão inventário
@@ -331,12 +343,12 @@ function setupUIListeners() {
 
     // Fechar inventário
     document.getElementById('close-inventory-btn')?.addEventListener('click', () => {
-        setScreen('map');
+        goToMap();
     });
 
     // Fechar personagem
     document.getElementById('close-character-btn')?.addEventListener('click', () => {
-        setScreen('map');
+        goToMap();
     });
 
     // Botões de atributo

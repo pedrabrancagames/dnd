@@ -97,7 +97,7 @@ function initScene() {
  * @param {string} modelPath - Caminho para o arquivo GLB
  * @returns {Promise<THREE.Group>}
  */
-export async function loadMonsterModel(modelPath = '/assets/models/placeholder-monster.glb') {
+export async function loadMonsterModel(modelPath = '/assets/models/monster.glb') {
     console.log('📦 Carregando modelo:', modelPath);
 
     return new Promise((resolve, reject) => {

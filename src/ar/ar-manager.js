@@ -3,7 +3,7 @@
  */
 
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 let renderer = null;
 let scene = null;
@@ -98,12 +98,15 @@ function initScene() {
  * @returns {Promise<THREE.Group>}
  */
 export async function loadMonsterModel(modelPath = '/assets/models/placeholder-monster.glb') {
+    console.log('📦 Carregando modelo:', modelPath);
+
     return new Promise((resolve, reject) => {
         const loader = new GLTFLoader();
 
         loader.load(
             modelPath,
             (gltf) => {
+                console.log('✅ Modelo carregado com sucesso!');
                 const model = gltf.scene;
 
                 // Escala o modelo
@@ -128,10 +131,13 @@ export async function loadMonsterModel(modelPath = '/assets/models/placeholder-m
                 resolve(model);
             },
             (progress) => {
-                console.log('Carregando modelo:', (progress.loaded / progress.total * 100).toFixed(0) + '%');
+                if (progress.total > 0) {
+                    console.log('⏳ Carregando modelo:', (progress.loaded / progress.total * 100).toFixed(0) + '%');
+                }
             },
             (error) => {
-                console.error('Erro ao carregar modelo:', error);
+                console.error('❌ Erro ao carregar modelo GLB:', error);
+                console.error('❌ Caminho tentado:', modelPath);
                 // Cria modelo placeholder se falhar
                 const geometry = new THREE.BoxGeometry(0.3, 0.5, 0.3);
                 const material = new THREE.MeshStandardMaterial({

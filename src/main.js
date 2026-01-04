@@ -477,28 +477,25 @@ async function startARCombat() {
     // Esconde painel de monstro
     document.getElementById('monster-panel')?.classList.add('hidden');
 
-    // Tenta iniciar sessão AR
+    // Inicia o combate primeiro
+    startCombat(gameState.currentMonster);
+    setScreen('ar');
+    updateARHUD();
+
+    // Tenta iniciar sessão AR (opcional, o combate funciona sem ela)
     const arStarted = await startARSession({
         onPlaced: () => {
-            console.log('Monstro posicionado em AR');
+            console.log('✅ Monstro posicionado em AR');
         },
         onEnd: () => {
-            console.log('Sessão AR encerrada');
-            if (gameState.inCombat) {
-                // Se ainda em combate, volta para o mapa
-                endCombat();
-                setScreen('map');
-            }
+            console.log('ℹ️ Sessão AR encerrada - combate continua em modo 2D');
+            // Não volta ao mapa automaticamente - o combate continua
         }
     });
 
     if (!arStarted) {
-        console.warn('Não foi possível iniciar AR, usando modo 2D');
+        console.warn('⚠️ Modo AR não disponível, usando interface 2D');
     }
-
-    startCombat(gameState.currentMonster);
-    setScreen('ar');
-    updateARHUD();
 
     // Inicia turno do monstro periodicamente
     startMonsterTurns();

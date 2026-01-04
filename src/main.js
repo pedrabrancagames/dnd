@@ -13,8 +13,11 @@ import { getCellId, getNearbyCells, getCellBiome, getCellCenter } from './lib/ce
 import { getMonstersByBiome, getMonstersByCR, selectRandomMonster, createMonsterInstance } from './data/monsters.js';
 import { gameState, setPlayer, setScreen, startCombat, endCombat, addXP, getClassIcon, updateDerivedStats } from './game/state.js';
 import { playerAttack, monsterAttack, isMonsterDefeated, isPlayerDefeated, castDamageSpell, useHealingPotion, attemptFlee } from './game/combat.js';
-import { generateLoot, getRarityColor } from './data/items.js';
+import { generateLoot, getRarityColor, getItemById } from './data/items.js';
 import { startARSession, endARSession, showMonsterDamageEffect, showMonsterDeathEffect, isARSessionActive } from './ar/ar-manager.js';
+import { grantXP, getXPProgress, getXPForLevel, getTotalXPForLevel, spendAttributePoint } from './game/progression.js';
+import { getClassDefinition, useClassAbility, getAbilityCooldownRemaining } from './game/classes.js';
+import { initInventory, addItemToInventory, equipItem, unequipItem, useItem, getInventoryWithDetails, getEquippedItem, recalculateEquipmentStats } from './game/inventory.js';
 
 // Leaflet map instance
 let map = null;
@@ -314,6 +317,36 @@ function setupUIListeners() {
         endCombat();
         setScreen('map');
         updateMapHUD();
+    });
+
+    // Botão inventário
+    document.getElementById('inventory-btn')?.addEventListener('click', () => {
+        openInventoryScreen();
+    });
+
+    // Botão personagem
+    document.getElementById('character-btn')?.addEventListener('click', () => {
+        openCharacterScreen();
+    });
+
+    // Fechar inventário
+    document.getElementById('close-inventory-btn')?.addEventListener('click', () => {
+        setScreen('map');
+    });
+
+    // Fechar personagem
+    document.getElementById('close-character-btn')?.addEventListener('click', () => {
+        setScreen('map');
+    });
+
+    // Botões de atributo
+    document.querySelectorAll('.attr-up-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const attr = btn.dataset.attr;
+            if (spendAttributePoint(attr)) {
+                updateCharacterScreen();
+            }
+        });
     });
 }
 
@@ -750,11 +783,6 @@ async function handleDefeat() {
     setScreen('defeat');
 }
 
-/**
- * Hash simples de string
- * @param {string} str 
- * @returns {number}
- */
 function hashCode(str) {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
@@ -763,6 +791,188 @@ function hashCode(str) {
         hash = hash & hash;
     }
     return hash;
+}
+
+// ========== TELA DE INVENTÁRIO ==========
+
+/**
+ * Abre a tela de inventário
+ */
+function openInventoryScreen() {
+    initInventory();
+    updateInventoryScreen();
+    setScreen('inventory');
+}
+
+/**
+ * Atualiza a tela de inventário
+ */
+function updateInventoryScreen() {
+    if (!gameState.player) return;
+
+    // Atualiza slots equipados
+    const weaponSlot = document.getElementById('equipped-weapon');
+    const armorSlot = document.getElementById('equipped-armor');
+    const accessorySlot = document.getElementById('equipped-accessory');
+
+    const equippedWeapon = getEquippedItem('weapon');
+    const equippedArmor = getEquippedItem('armor');
+    const equippedAccessory = getEquippedItem('accessory');
+
+    weaponSlot.textContent = equippedWeapon?.namePt || 'Vazio';
+    armorSlot.textContent = equippedArmor?.namePt || 'Vazio';
+    accessorySlot.textContent = equippedAccessory?.namePt || 'Vazio';
+
+    // Atualiza grid de itens
+    const grid = document.getElementById('inventory-grid');
+    grid.innerHTML = '';
+
+    const inventory = getInventoryWithDetails();
+
+    inventory.forEach(invItem => {
+        const div = document.createElement('div');
+        div.className = 'inventory-item';
+        div.style.borderColor = getRarityColor(invItem.item.rarity);
+        div.dataset.instanceId = invItem.id;
+
+        // Ícone baseado no tipo
+        const icons = {
+            weapon: '⚔️',
+            armor: '🛡️',
+            accessory: '💍',
+            consumable: '🧪'
+        };
+        div.textContent = icons[invItem.item.type] || '📦';
+
+        if (invItem.quantity > 1) {
+            const qty = document.createElement('span');
+            qty.className = 'quantity';
+            qty.textContent = invItem.quantity;
+            div.appendChild(qty);
+        }
+
+        div.addEventListener('click', () => selectInventoryItem(invItem));
+        grid.appendChild(div);
+    });
+}
+
+let selectedInventoryItem = null;
+
+/**
+ * Seleciona um item no inventário
+ */
+function selectInventoryItem(invItem) {
+    selectedInventoryItem = invItem;
+
+    // Destaca item selecionado
+    document.querySelectorAll('.inventory-item').forEach(el => el.classList.remove('selected'));
+    document.querySelector(`[data-instance-id="${invItem.id}"]`)?.classList.add('selected');
+
+    // Mostra detalhes
+    const details = document.getElementById('item-details');
+    details.classList.remove('hidden');
+
+    document.getElementById('item-name').textContent = invItem.item.namePt || invItem.item.name;
+    document.getElementById('item-name').style.color = getRarityColor(invItem.item.rarity);
+    document.getElementById('item-description').textContent = invItem.item.effect || '';
+
+    const stats = document.getElementById('item-stats');
+    stats.innerHTML = '';
+
+    if (invItem.item.damage) {
+        stats.innerHTML += `<div>Dano: ${invItem.item.damage}</div>`;
+    }
+    if (invItem.item.acBonus) {
+        stats.innerHTML += `<div>AC: +${invItem.item.acBonus}</div>`;
+    }
+
+    // Mostra botões apropriados
+    const equipBtn = document.getElementById('equip-item-btn');
+    const useBtn = document.getElementById('use-item-btn');
+
+    if (invItem.item.type === 'consumable') {
+        equipBtn.style.display = 'none';
+        useBtn.style.display = 'block';
+        useBtn.onclick = () => {
+            const result = useItem(invItem.id);
+            if (result.success) {
+                showARMessage(result.message);
+                updateInventoryScreen();
+            }
+        };
+    } else {
+        equipBtn.style.display = 'block';
+        useBtn.style.display = 'none';
+        equipBtn.onclick = () => {
+            const result = equipItem(invItem.id);
+            if (result.success) {
+                updateInventoryScreen();
+            }
+        };
+    }
+}
+
+// ========== TELA DE PERSONAGEM ==========
+
+/**
+ * Abre a tela de personagem
+ */
+function openCharacterScreen() {
+    updateCharacterScreen();
+    setScreen('character-screen-panel');
+}
+
+/**
+ * Atualiza a tela de personagem
+ */
+function updateCharacterScreen() {
+    if (!gameState.player) return;
+
+    const player = gameState.player;
+    const classDef = getClassDefinition(player.class);
+
+    // Info básica
+    document.getElementById('char-class-icon').textContent = getClassIcon(player.class);
+    document.getElementById('char-name').textContent = player.name;
+    document.getElementById('char-class').textContent = classDef?.namePt || player.class;
+    document.getElementById('char-level').textContent = `Nível ${player.level}`;
+
+    // Barra de XP
+    const xpProgress = getXPProgress(player.xp, player.level);
+    const xpNeeded = getXPForLevel(player.level + 1);
+    const xpCurrent = player.xp - getTotalXPForLevel(player.level);
+
+    document.getElementById('xp-fill').style.width = `${xpProgress}%`;
+    document.getElementById('xp-text').textContent = `${xpCurrent} / ${xpNeeded} XP`;
+
+    // Atributos
+    document.getElementById('attr-str').textContent = player.str;
+    document.getElementById('attr-dex').textContent = player.dex;
+    document.getElementById('attr-con').textContent = player.con;
+    document.getElementById('attr-int').textContent = player.int;
+    document.getElementById('attr-wis').textContent = player.wis;
+    document.getElementById('attr-cha').textContent = player.cha;
+
+    // Pontos de atributo
+    const points = player.attributePoints || 0;
+    document.getElementById('attribute-points').textContent = points > 0 ? `(${points} pontos)` : '';
+
+    // Mostra/esconde botões de +
+    document.querySelectorAll('.attr-up-btn').forEach(btn => {
+        btn.classList.toggle('visible', points > 0);
+    });
+
+    // Stats derivados
+    document.getElementById('char-hp').textContent = `${player.currentHp}/${player.maxHp}`;
+    document.getElementById('char-mana').textContent = `${player.currentMana}/${player.maxMana}`;
+    document.getElementById('char-ac').textContent = player.ac;
+    document.getElementById('char-attack').textContent = `+${player.attackMod}`;
+
+    // Habilidade de classe
+    if (classDef) {
+        document.querySelector('#class-ability .ability-name').textContent = classDef.ability.namePt;
+        document.querySelector('#class-ability .ability-desc').textContent = classDef.ability.description;
+    }
 }
 
 // Inicia a aplicação quando o DOM estiver pronto

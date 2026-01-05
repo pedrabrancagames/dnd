@@ -755,6 +755,9 @@ async function handleVictory() {
     // Adiciona XP
     const xpResult = addXP(monster.xp);
 
+    // Sempre atualiza stats derivados após vitória
+    updateDerivedStats();
+
     // Inicializa inventário se necessário
     initInventory();
 

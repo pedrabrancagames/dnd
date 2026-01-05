@@ -19,7 +19,7 @@ import { grantXP, getXPProgress, getXPForLevel, getTotalXPForLevel, spendAttribu
 import { getClassDefinition, useClassAbility, getAbilityCooldownRemaining } from './game/classes.js';
 import { initInventory, addItemToInventory, equipItem, unequipItem, useItem, getInventoryWithDetails, getEquippedItem, recalculateEquipmentStats } from './game/inventory.js';
 import { rollD20Animation } from './ar/dice-animation.js';
-import { recordMonsterKill, getDefeatedMonsters } from './lib/supabase.js';
+import { recordMonsterKill, getDefeatedMonsters, updatePlayer } from './lib/supabase.js';
 
 // Leaflet map instance
 let map = null;
@@ -913,6 +913,14 @@ async function handleVictory() {
     for (const lootItem of loot) {
         if (lootItem.type === 'gold') {
             gameState.player.gold = (gameState.player.gold || 0) + lootItem.amount;
+            // Persiste o ouro imediatamente
+            if (gameState.player.id) {
+                try {
+                    await updatePlayer(gameState.player.id, { gold: gameState.player.gold });
+                } catch (err) {
+                    console.error("Erro ao salvar ouro:", err);
+                }
+            }
         } else if (lootItem.item) {
             try {
                 const success = await addItemToInventory(lootItem.item.id, 1);

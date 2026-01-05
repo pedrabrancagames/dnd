@@ -18,6 +18,7 @@ import { startARSession, endARSession, showMonsterDamageEffect, showMonsterDeath
 import { grantXP, getXPProgress, getXPForLevel, getTotalXPForLevel, spendAttributePoint } from './game/progression.js';
 import { getClassDefinition, useClassAbility, getAbilityCooldownRemaining } from './game/classes.js';
 import { initInventory, addItemToInventory, equipItem, unequipItem, useItem, getInventoryWithDetails, getEquippedItem, recalculateEquipmentStats } from './game/inventory.js';
+import { rollD20Animation } from './ar/dice-animation.js';
 
 // Leaflet map instance
 let map = null;
@@ -646,34 +647,47 @@ function executeMonsterTurn() {
 /**
  * Handler de ataque do jogador
  */
+let isAttacking = false;
+
 function handleAttack() {
+    if (isAttacking) return; // Evita cliques durante animação
+
     const result = playerAttack();
     if (!result) return;
 
-    if (result.hit) {
-        showDamagePopup(result.damage, result.isCritical ? 'critical' : 'fire', result.isCritical);
-        // Efeito visual no monstro 3D
-        showMonsterDamageEffect(result.damage, result.isCritical);
-        if (result.isCritical) {
-            showARMessage('CRÍTICO!');
-        }
-    } else {
-        showDamagePopup(0, 'miss');
-        if (result.isFumble) {
-            showARMessage('Falha Crítica!');
-        }
-    }
+    isAttacking = true;
 
-    updateARHUD();
+    // Animação do dado d20
+    rollD20Animation(result.natural, () => {
+        isAttacking = false;
 
-    if (isMonsterDefeated()) {
-        // Efeito de morte do monstro
-        showMonsterDeathEffect();
-        setTimeout(handleVictory, 1200);
-    } else {
-        // Turno do monstro
-        executeMonsterTurn();
-    }
+        if (result.hit) {
+            showDamagePopup(result.damage, result.isCritical ? 'critical' : 'fire', result.isCritical);
+            // Efeito visual no monstro 3D
+            showMonsterDamageEffect(result.damage, result.isCritical);
+            if (result.isCritical) {
+                showARMessage('CRÍTICO! Dano dobrado!');
+            }
+        } else {
+            showDamagePopup(0, 'miss');
+            if (result.isFumble) {
+                showARMessage('Falha Crítica!');
+            } else {
+                showARMessage('Errou!');
+            }
+        }
+
+        updateARHUD();
+
+        if (isMonsterDefeated()) {
+            // Efeito de morte do monstro
+            showMonsterDeathEffect();
+            setTimeout(handleVictory, 1200);
+        } else {
+            // Turno do monstro
+            executeMonsterTurn();
+        }
+    });
 }
 
 /**

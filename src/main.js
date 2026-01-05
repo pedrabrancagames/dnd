@@ -45,6 +45,11 @@ function goToMap() {
 async function init() {
     console.log('🎮 Iniciando D&D AR Adventure...');
 
+    // IMPORTANTE: Setup de listeners ANTES de qualquer verificação
+    // para garantir que botões funcionem mesmo em telas de erro
+    setupUIListeners();
+    setupAuthListeners();
+
     updateLoadingStatus('Verificando compatibilidade...');
 
     // 1. Verificação de compatibilidade
@@ -81,9 +86,7 @@ async function init() {
         setScreen('login');
     }
 
-    // 3. Setup de listeners
-    setupAuthListeners();
-    setupUIListeners();
+    // 3. Configurações finais
     setupCompass();
 
     // 4. Observar mudanças de autenticação

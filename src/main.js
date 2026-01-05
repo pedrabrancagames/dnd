@@ -542,8 +542,8 @@ async function startARCombat() {
         console.warn('⚠️ Modo AR não disponível, usando interface 2D');
     }
 
-    // Inicia turno do monstro periodicamente
-    startMonsterTurns();
+    // Mostra mensagem de início de combate
+    showARMessage('Seu turno! Escolha uma ação.');
 }
 
 /**
@@ -611,39 +611,36 @@ function showARMessage(message) {
 }
 
 /**
- * Inicia turnos do monstro
+ * Executa turno do monstro (após ação do jogador)
  */
-let monsterTurnInterval = null;
+function executeMonsterTurn() {
+    if (!gameState.inCombat || !gameState.currentMonster) return;
+    if (isMonsterDefeated()) return;
 
-function startMonsterTurns() {
-    if (monsterTurnInterval) {
-        clearInterval(monsterTurnInterval);
-    }
-
-    monsterTurnInterval = setInterval(() => {
-        if (!gameState.inCombat || !gameState.currentMonster) {
-            clearInterval(monsterTurnInterval);
-            return;
-        }
+    // Pequeno delay para o jogador ver o resultado da sua ação
+    setTimeout(() => {
+        if (!gameState.inCombat || !gameState.currentMonster) return;
+        if (isMonsterDefeated()) return;
 
         // Monstro ataca
         const result = monsterAttack();
         if (result) {
             if (result.hit) {
                 showDamagePopup(result.damage, result.isCritical ? 'critical' : 'normal', result.isCritical);
+                showARMessage(`${gameState.currentMonster.name} ataca!`);
             } else {
                 showDamagePopup(0, 'miss');
+                showARMessage('Monstro errou!');
             }
 
             updateARHUD();
 
             // Verifica se jogador morreu
             if (isPlayerDefeated()) {
-                clearInterval(monsterTurnInterval);
                 handleDefeat();
             }
         }
-    }, 3500); // Monstro ataca a cada 3.5 segundos
+    }, 800); // Delay de 0.8s antes do turno do monstro
 }
 
 /**
@@ -670,10 +667,12 @@ function handleAttack() {
     updateARHUD();
 
     if (isMonsterDefeated()) {
-        clearInterval(monsterTurnInterval);
         // Efeito de morte do monstro
         showMonsterDeathEffect();
         setTimeout(handleVictory, 1200);
+    } else {
+        // Turno do monstro
+        executeMonsterTurn();
     }
 }
 
@@ -691,6 +690,7 @@ function handleSpell() {
 
     if (result.hit) {
         showDamagePopup(result.damage, result.spellType, false);
+        showMonsterDamageEffect(result.damage, false);
     } else {
         showDamagePopup(0, 'miss');
     }
@@ -698,8 +698,11 @@ function handleSpell() {
     updateARHUD();
 
     if (isMonsterDefeated()) {
-        clearInterval(monsterTurnInterval);
-        handleVictory();
+        showMonsterDeathEffect();
+        setTimeout(handleVictory, 1200);
+    } else {
+        // Turno do monstro
+        executeMonsterTurn();
     }
 }
 
@@ -714,7 +717,11 @@ function handleItem() {
     }
 
     showDamagePopup(result.healAmount, 'heal');
+    showARMessage(`Curou ${result.healAmount} HP!`);
     updateARHUD();
+
+    // Usar item gasta um turno
+    executeMonsterTurn();
 }
 
 /**

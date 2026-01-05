@@ -11,6 +11,11 @@ let diceCtx = null;
  * Inicializa o container do dado
  */
 function initDiceContainer() {
+    // Se existe mas nõ está no DOM, limpa referência
+    if (diceContainer && !document.body.contains(diceContainer)) {
+        diceContainer = null;
+    }
+
     if (diceContainer) return;
 
     // Container principal

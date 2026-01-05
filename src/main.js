@@ -804,14 +804,19 @@ async function handleFlee() {
     showARMessage(result.message);
 
     if (result.success) {
-        clearInterval(monsterTurnInterval);
-
-        if (isARSessionActive()) {
-            await endARSession();
+        // Tenta encerrar sessão AR com segurança
+        try {
+            if (isARSessionActive()) {
+                await endARSession();
+            }
+        } catch (e) {
+            console.error("Erro ao encerrar AR na fuga:", e);
         }
 
         endCombat();
-        setTimeout(() => setScreen('map'), 1000);
+
+        // Volta para o mapa usando a função correta
+        setTimeout(() => goToMap(), 1000);
     } else {
         updateARHUD();
 

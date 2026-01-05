@@ -1060,7 +1060,7 @@ function selectInventoryItem(invItem) {
     }
     if (invItem.item.acBonus) {
         stats.innerHTML += `<div>AC: +${invItem.item.acBonus}</div>`;
-        ```
+    }
     // Mostra botões apropriados
     const equipBtn = document.getElementById('equip-item-btn');
     const useBtn = document.getElementById('use-item-btn');
@@ -1079,7 +1079,7 @@ function selectInventoryItem(invItem) {
         };
     } else {
         useBtn.style.display = 'none';
-        
+
         if (invItem.equipped) {
             equipBtn.style.display = 'none';
             if (unequipBtn) {
@@ -1089,7 +1089,7 @@ function selectInventoryItem(invItem) {
                     if (result.success) {
                         updateInventoryScreen();
                         // Atualiza seleção para refletir estado
-                        selectInventoryItem(invItem); 
+                        selectInventoryItem(invItem);
                     }
                 };
             }
@@ -1130,51 +1130,51 @@ function updateCharacterScreen() {
     document.getElementById('char-class-icon').textContent = getClassIcon(player.class);
     document.getElementById('char-name').textContent = player.name;
     document.getElementById('char-class').textContent = classDef?.namePt || player.class;
-    document.getElementById('char-level').textContent = `Nível ${ player.level } `;
+    document.getElementById('char-level').textContent = `Nível ${player.level} `;
 
     // Barra de XP
     const xpProgress = getXPProgress(player.xp, player.level);
     const xpNeeded = getXPForLevel(player.level + 1);
     const xpCurrent = player.xp - getTotalXPForLevel(player.level);
-    
+
     // Atualiza ouro
     const goldElem = document.getElementById('char-gold');
     if (goldElem) {
         goldElem.textContent = player.gold || 0;
     }
 
-    document.getElementById('xp-fill').style.width = `${ xpProgress }% `;
-    document.getElementById('xp-text').textContent = `${ xpCurrent } / ${xpNeeded} XP`;
+    document.getElementById('xp-fill').style.width = `${xpProgress}% `;
+    document.getElementById('xp-text').textContent = `${xpCurrent} / ${xpNeeded} XP`;
 
-        // Atributos
-        document.getElementById('attr-str').textContent = player.str;
-        document.getElementById('attr-dex').textContent = player.dex;
-        document.getElementById('attr-con').textContent = player.con;
-        document.getElementById('attr-int').textContent = player.int;
-        document.getElementById('attr-wis').textContent = player.wis;
-        document.getElementById('attr-cha').textContent = player.cha;
+    // Atributos
+    document.getElementById('attr-str').textContent = player.str;
+    document.getElementById('attr-dex').textContent = player.dex;
+    document.getElementById('attr-con').textContent = player.con;
+    document.getElementById('attr-int').textContent = player.int;
+    document.getElementById('attr-wis').textContent = player.wis;
+    document.getElementById('attr-cha').textContent = player.cha;
 
-        // Pontos de atributo
-        const points = player.attributePoints || 0;
-        document.getElementById('attribute-points').textContent = points > 0 ? `(${points} pontos)` : '';
+    // Pontos de atributo
+    const points = player.attributePoints || 0;
+    document.getElementById('attribute-points').textContent = points > 0 ? `(${points} pontos)` : '';
 
-        // Mostra/esconde botões de +
-        document.querySelectorAll('.attr-up-btn').forEach(btn => {
-            btn.classList.toggle('visible', points > 0);
-        });
+    // Mostra/esconde botões de +
+    document.querySelectorAll('.attr-up-btn').forEach(btn => {
+        btn.classList.toggle('visible', points > 0);
+    });
 
-        // Stats derivados
-        document.getElementById('char-hp').textContent = `${player.currentHp}/${player.maxHp}`;
-        document.getElementById('char-mana').textContent = `${player.currentMana}/${player.maxMana}`;
-        document.getElementById('char-ac').textContent = player.ac;
-        document.getElementById('char-attack').textContent = `+${player.attackMod}`;
+    // Stats derivados
+    document.getElementById('char-hp').textContent = `${player.currentHp}/${player.maxHp}`;
+    document.getElementById('char-mana').textContent = `${player.currentMana}/${player.maxMana}`;
+    document.getElementById('char-ac').textContent = player.ac;
+    document.getElementById('char-attack').textContent = `+${player.attackMod}`;
 
-        // Habilidade de classe
-        if (classDef) {
-            document.querySelector('#class-ability .ability-name').textContent = classDef.ability.namePt;
-            document.querySelector('#class-ability .ability-desc').textContent = classDef.ability.description;
-        }
+    // Habilidade de classe
+    if (classDef) {
+        document.querySelector('#class-ability .ability-name').textContent = classDef.ability.namePt;
+        document.querySelector('#class-ability .ability-desc').textContent = classDef.ability.description;
     }
+}
 
-    // Inicia a aplicação quando o DOM estiver pronto
-    document.addEventListener('DOMContentLoaded', init);
+// Inicia a aplicação quando o DOM estiver pronto
+document.addEventListener('DOMContentLoaded', init);

@@ -178,7 +178,7 @@ export async function startARSession({ onPlaced, onEnd } = {}) {
         xrSession = await navigator.xr.requestSession('immersive-ar', {
             requiredFeatures: ['hit-test', 'local-floor'],
             optionalFeatures: ['dom-overlay'],
-            domOverlay: { root: document.getElementById('ar-hud') }
+            domOverlay: { root: document.body }
         });
 
         // Configura o renderer para a sessão

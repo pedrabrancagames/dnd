@@ -650,44 +650,70 @@ function executeMonsterTurn() {
 let isAttacking = false;
 
 function handleAttack() {
-    if (isAttacking) return; // Evita cliques durante animação
+    console.log('🗡️ handleAttack chamado');
+
+    if (isAttacking) {
+        console.log('🗡️ Já está atacando, ignorando');
+        return;
+    }
 
     const result = playerAttack();
-    if (!result) return;
+    console.log('🗡️ Resultado do ataque:', result);
+
+    if (!result) {
+        console.log('🗡️ Ataque retornou null - sem combate ativo?');
+        showARMessage('Nenhum combate ativo!');
+        return;
+    }
 
     isAttacking = true;
 
-    // Animação do dado d20
-    rollD20Animation(result.natural, () => {
-        isAttacking = false;
+    // Mostra o resultado do dado primeiro
+    showARMessage(`🎲 d20: ${result.natural}`);
 
-        if (result.hit) {
-            showDamagePopup(result.damage, result.isCritical ? 'critical' : 'fire', result.isCritical);
-            // Efeito visual no monstro 3D
-            showMonsterDamageEffect(result.damage, result.isCritical);
-            if (result.isCritical) {
-                showARMessage('CRÍTICO! Dano dobrado!');
-            }
+    // Tenta animação do dado, com fallback
+    try {
+        rollD20Animation(result.natural, () => {
+            processAttackResult(result);
+        });
+    } catch (e) {
+        console.error('🎲 Erro na animação do dado:', e);
+        // Fallback: processa resultado sem animação
+        setTimeout(() => processAttackResult(result), 500);
+    }
+}
+
+/**
+ * Processa o resultado do ataque após animação
+ */
+function processAttackResult(result) {
+    isAttacking = false;
+
+    if (result.hit) {
+        showDamagePopup(result.damage, result.isCritical ? 'critical' : 'fire', result.isCritical);
+        showMonsterDamageEffect(result.damage, result.isCritical);
+        if (result.isCritical) {
+            showARMessage('CRÍTICO! Dano dobrado!');
         } else {
-            showDamagePopup(0, 'miss');
-            if (result.isFumble) {
-                showARMessage('Falha Crítica!');
-            } else {
-                showARMessage('Errou!');
-            }
+            showARMessage(`Acertou! ${result.damage} de dano`);
         }
-
-        updateARHUD();
-
-        if (isMonsterDefeated()) {
-            // Efeito de morte do monstro
-            showMonsterDeathEffect();
-            setTimeout(handleVictory, 1200);
+    } else {
+        showDamagePopup(0, 'miss');
+        if (result.isFumble) {
+            showARMessage('Falha Crítica!');
         } else {
-            // Turno do monstro
-            executeMonsterTurn();
+            showARMessage('Errou!');
         }
-    });
+    }
+
+    updateARHUD();
+
+    if (isMonsterDefeated()) {
+        showMonsterDeathEffect();
+        setTimeout(handleVictory, 1200);
+    } else {
+        executeMonsterTurn();
+    }
 }
 
 /**

@@ -1,100 +1,114 @@
 /**
- * Animação de dado D20 em 3D
+ * Animação de dado D20 - Versão CSS/Canvas (mais compatível)
  */
-
-import * as THREE from 'three';
 
 // Container do dado
-let diceScene = null;
-let diceCamera = null;
-let diceRenderer = null;
-let diceMesh = null;
 let diceContainer = null;
-let diceAnimationId = null;
+let diceCanvas = null;
+let diceCtx = null;
 
 /**
- * Cria a cena do dado
+ * Inicializa o container do dado
  */
-function initDiceScene() {
-    // Container para o dado
+function initDiceContainer() {
+    if (diceContainer) return;
+
+    // Container principal
     diceContainer = document.createElement('div');
     diceContainer.id = 'dice-container';
     diceContainer.style.cssText = `
         position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 99999;
+        background: rgba(0, 0, 0, 0.6);
+        pointer-events: none;
+    `;
+
+    // Canvas do dado
+    diceCanvas = document.createElement('canvas');
+    diceCanvas.width = 200;
+    diceCanvas.height = 200;
+    diceCanvas.style.cssText = `
         width: 200px;
         height: 200px;
-        z-index: 9999;
-        pointer-events: none;
-        display: none;
     `;
+    diceContainer.appendChild(diceCanvas);
+    diceCtx = diceCanvas.getContext('2d');
+
     document.body.appendChild(diceContainer);
 
-    // Cena
-    diceScene = new THREE.Scene();
-
-    // Câmera
-    diceCamera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
-    diceCamera.position.z = 3;
-
-    // Renderer
-    diceRenderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-    diceRenderer.setSize(200, 200);
-    diceRenderer.setClearColor(0x000000, 0);
-    diceContainer.appendChild(diceRenderer.domElement);
-
-    // Luzes
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-    diceScene.add(ambientLight);
-
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight.position.set(2, 2, 2);
-    diceScene.add(directionalLight);
+    console.log('🎲 Dice container initialized');
 }
 
 /**
- * Cria o dado D20 (icosaedro)
+ * Desenha um dado D20 simplificado
  */
-function createD20(resultNumber) {
-    // Remove dado anterior se existir
-    if (diceMesh) {
-        diceScene.remove(diceMesh);
-        diceMesh.geometry.dispose();
-        diceMesh.material.dispose();
+function drawD20(rotation, scale, result) {
+    const ctx = diceCtx;
+    const cx = 100;
+    const cy = 100;
+    const size = 70 * scale;
+
+    ctx.clearRect(0, 0, 200, 200);
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(rotation);
+
+    // Cor baseada no resultado
+    let fillColor = '#cc9900';
+    let glowColor = 'rgba(204, 153, 0, 0.5)';
+
+    if (result === 20) {
+        fillColor = '#00ff00';
+        glowColor = 'rgba(0, 255, 0, 0.5)';
+    } else if (result === 1) {
+        fillColor = '#ff0000';
+        glowColor = 'rgba(255, 0, 0, 0.5)';
+    } else if (result >= 15) {
+        fillColor = '#00ccff';
+        glowColor = 'rgba(0, 204, 255, 0.5)';
     }
 
-    // Geometria do icosaedro
-    const geometry = new THREE.IcosahedronGeometry(0.8, 0);
+    // Sombra/glow
+    ctx.shadowColor = glowColor;
+    ctx.shadowBlur = 20;
 
-    // Material com cor baseada no resultado
-    let color = 0xcc9900; // Dourado padrão
-
-    if (resultNumber === 20) {
-        color = 0x00ff00; // Verde brilhante para crítico
-    } else if (resultNumber === 1) {
-        color = 0xff0000; // Vermelho para falha
-    } else if (resultNumber >= 15) {
-        color = 0x00ccff; // Azul para bom
+    // Desenha icosaedro simplificado (hexágono com triângulos)
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+        const angle = (i * Math.PI / 3) - Math.PI / 2;
+        const x = Math.cos(angle) * size;
+        const y = Math.sin(angle) * size;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
     }
+    ctx.closePath();
+    ctx.fillStyle = fillColor;
+    ctx.fill();
+    ctx.strokeStyle = '#333';
+    ctx.lineWidth = 2;
+    ctx.stroke();
 
-    const material = new THREE.MeshPhongMaterial({
-        color: color,
-        specular: 0xffffff,
-        shininess: 100,
-        flatShading: true
-    });
+    // Desenha linhas internas
+    ctx.shadowBlur = 0;
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+        const angle = (i * Math.PI / 3) - Math.PI / 2;
+        const x = Math.cos(angle) * size;
+        const y = Math.sin(angle) * size;
+        ctx.moveTo(0, 0);
+        ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+    ctx.stroke();
 
-    diceMesh = new THREE.Mesh(geometry, material);
-
-    // Adiciona bordas
-    const edges = new THREE.EdgesGeometry(geometry);
-    const lineMaterial = new THREE.LineBasicMaterial({ color: 0x333333, linewidth: 2 });
-    const wireframe = new THREE.LineSegments(edges, lineMaterial);
-    diceMesh.add(wireframe);
-
-    diceScene.add(diceMesh);
+    ctx.restore();
 }
 
 /**
@@ -103,61 +117,56 @@ function createD20(resultNumber) {
  * @param {Function} onComplete - Callback ao terminar
  */
 export function rollD20Animation(result, onComplete) {
-    // Inicializa se necessário
-    if (!diceScene) {
-        initDiceScene();
-    }
+    console.log('🎲 rollD20Animation called with result:', result);
 
-    createD20(result);
-    diceContainer.style.display = 'block';
+    try {
+        initDiceContainer();
 
-    // Velocidades de rotação inicial (aleatórias)
-    let rotationSpeedX = (Math.random() * 0.3 + 0.2);
-    let rotationSpeedY = (Math.random() * 0.4 + 0.3);
-    let rotationSpeedZ = (Math.random() * 0.2 + 0.1);
+        diceContainer.style.display = 'flex';
 
-    const startTime = Date.now();
-    const duration = 1500; // 1.5 segundos de animação
+        const startTime = Date.now();
+        const duration = 1500;
+        let rotation = 0;
+        const rotationSpeed = 0.4 + Math.random() * 0.3;
 
-    function animate() {
-        const elapsed = Date.now() - startTime;
-        const progress = Math.min(elapsed / duration, 1);
+        function animate() {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / duration, 1);
 
-        // Desaceleração suave (easing)
-        const easeOut = 1 - Math.pow(1 - progress, 3);
+            // Easing
+            const easeOut = 1 - Math.pow(1 - progress, 3);
 
-        // Aplica rotação com desaceleração
-        diceMesh.rotation.x += rotationSpeedX * (1 - easeOut);
-        diceMesh.rotation.y += rotationSpeedY * (1 - easeOut);
-        diceMesh.rotation.z += rotationSpeedZ * (1 - easeOut);
+            // Rotação desacelerando
+            rotation += rotationSpeed * (1 - easeOut);
 
-        // Escala (bounce no início)
-        const bounceProgress = Math.min(progress * 2, 1);
-        const scale = 1 + Math.sin(bounceProgress * Math.PI) * 0.2;
-        diceMesh.scale.set(scale, scale, scale);
+            // Escala com bounce
+            const bounceProgress = Math.min(progress * 2, 1);
+            const scale = 1 + Math.sin(bounceProgress * Math.PI) * 0.3;
 
-        diceRenderer.render(diceScene, diceCamera);
+            drawD20(rotation, scale, result);
 
-        if (progress < 1) {
-            diceAnimationId = requestAnimationFrame(animate);
-        } else {
-            // Animação terminou - mostra resultado
-            showDiceResult(result, onComplete);
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            } else {
+                // Mostra resultado
+                showDiceResult(result, onComplete);
+            }
         }
-    }
 
-    // Cancela animação anterior se existir
-    if (diceAnimationId) {
-        cancelAnimationFrame(diceAnimationId);
+        animate();
+    } catch (e) {
+        console.error('🎲 Dice animation error:', e);
+        // Em caso de erro, chama callback direto
+        if (onComplete) onComplete();
     }
-
-    animate();
 }
 
 /**
  * Mostra o resultado do dado
  */
 function showDiceResult(result, onComplete) {
+    console.log('🎲 Showing result:', result);
+
     // Cria overlay de resultado
     const resultOverlay = document.createElement('div');
     resultOverlay.id = 'dice-result';
@@ -166,32 +175,37 @@ function showDiceResult(result, onComplete) {
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        font-size: 64px;
+        font-size: 72px;
         font-weight: bold;
         color: ${result === 20 ? '#00ff00' : result === 1 ? '#ff0000' : '#ffd700'};
-        text-shadow: 0 0 20px ${result === 20 ? '#00ff00' : result === 1 ? '#ff0000' : '#ffd700'},
-                     0 0 40px rgba(0,0,0,0.8);
-        z-index: 10000;
-        animation: diceResultPop 0.5s ease-out;
+        text-shadow: 
+            0 0 20px ${result === 20 ? '#00ff00' : result === 1 ? '#ff0000' : '#ffd700'},
+            0 0 40px ${result === 20 ? '#00ff00' : result === 1 ? '#ff0000' : '#ffd700'},
+            2px 2px 4px rgba(0,0,0,0.8);
+        z-index: 100000;
         pointer-events: none;
+        text-align: center;
+        animation: diceResultPop 0.5s ease-out;
+        font-family: 'Outfit', sans-serif;
     `;
 
     // Texto do resultado
     if (result === 20) {
-        resultOverlay.innerHTML = `${result}<br><span style="font-size: 24px;">CRÍTICO!</span>`;
+        resultOverlay.innerHTML = `<span style="font-size: 80px;">20</span><br><span style="font-size: 24px; color: #00ff00;">CRÍTICO!</span>`;
     } else if (result === 1) {
-        resultOverlay.innerHTML = `${result}<br><span style="font-size: 24px;">FALHA!</span>`;
+        resultOverlay.innerHTML = `<span style="font-size: 80px;">1</span><br><span style="font-size: 24px; color: #ff0000;">FALHA!</span>`;
     } else {
-        resultOverlay.textContent = result;
+        resultOverlay.innerHTML = `<span style="font-size: 80px;">${result}</span>`;
     }
 
     document.body.appendChild(resultOverlay);
 
-    // Remove o dado e resultado após um tempo
+    // Remove após 1 segundo
     setTimeout(() => {
-        diceContainer.style.display = 'none';
-        resultOverlay.remove();
+        if (diceContainer) diceContainer.style.display = 'none';
+        if (resultOverlay.parentNode) resultOverlay.remove();
 
+        console.log('🎲 Animation complete, calling callback');
         if (onComplete) {
             onComplete();
         }
@@ -209,11 +223,12 @@ function injectDiceStyles() {
     style.textContent = `
         @keyframes diceResultPop {
             0% {
-                transform: translate(-50%, -50%) scale(0.5);
+                transform: translate(-50%, -50%) scale(0.3);
                 opacity: 0;
             }
-            50% {
-                transform: translate(-50%, -50%) scale(1.2);
+            60% {
+                transform: translate(-50%, -50%) scale(1.3);
+                opacity: 1;
             }
             100% {
                 transform: translate(-50%, -50%) scale(1);
@@ -222,6 +237,7 @@ function injectDiceStyles() {
         }
     `;
     document.head.appendChild(style);
+    console.log('🎲 Dice styles injected');
 }
 
 // Injeta estilos ao carregar

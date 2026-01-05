@@ -1261,8 +1261,31 @@ body {
   transition: var(--transition-fast);
 }
 
-border-color: var(--color-accent-gold);
-background: rgba(255, 215, 0, 0.2);
+.map-btn:hover {
+  border-color: var(--color-accent-gold);
+  background: rgba(255, 215, 0, 0.2);
+}
+
+/* ===== Rest Section ===== */
+.rest-section {
+  margin-bottom: var(--spacing-lg);
+  padding-bottom: var(--spacing-lg);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.rest-section h2 {
+  font-size: var(--font-size-md);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.rest-buttons {
+  display: flex;
+  gap: var(--spacing-md);
+}
+
+.rest-buttons button {
+  flex: 1;
 }
 
 /* ===== New Profile Styles ===== */

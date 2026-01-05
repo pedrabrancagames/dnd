@@ -621,30 +621,58 @@ function executeMonsterTurn() {
     if (!gameState.inCombat || !gameState.currentMonster) return;
     if (isMonsterDefeated()) return;
 
-    // Pequeno delay para o jogador ver o resultado da sua ação
+    // Delay maior para o player ver o resultado do seu próprio ataque antes
     setTimeout(() => {
         if (!gameState.inCombat || !gameState.currentMonster) return;
         if (isMonsterDefeated()) return;
 
-        // Monstro ataca
+        // 1. Avisa ataque
+        showARMessage(`${gameState.currentMonster.emoji} ${gameState.currentMonster.name} vai atacar!`);
+
+        // 2. Calcula resultado (rolagem "server-side")
         const result = monsterAttack();
+
         if (result) {
-            if (result.hit) {
-                showDamagePopup(result.damage, result.isCritical ? 'critical' : 'normal', result.isCritical);
-                showARMessage(`${gameState.currentMonster.name} ataca!`);
-            } else {
-                showDamagePopup(0, 'miss');
-                showARMessage('Monstro errou!');
-            }
+            // 3. Pequeno delay e rola o dado
+            setTimeout(() => {
+                showARMessage(`🎲 d20: ${result.natural}`);
 
-            updateARHUD();
+                try {
+                    rollD20Animation(result.natural, () => {
+                        // 4. Callback pós-animação: Aplica efeitos visuais
+                        if (result.hit) {
+                            showDamagePopup(result.damage, result.isCritical ? 'critical' : 'normal', result.isCritical);
 
-            // Verifica se jogador morreu
-            if (isPlayerDefeated()) {
-                handleDefeat();
-            }
+                            if (result.isCritical) {
+                                showARMessage(`CRÍTICO! Sofreu ${result.damage} dano!`);
+                            } else {
+                                showARMessage(`Acertado! Sofreu ${result.damage} dano`);
+                            }
+                        } else {
+                            showDamagePopup(0, 'miss');
+                            showARMessage('Esquivou!');
+                        }
+
+                        updateARHUD();
+
+                        // 5. Verifica derrota ou passa a vez
+                        if (isPlayerDefeated()) {
+                            handleDefeat();
+                        } else {
+                            setTimeout(() => {
+                                showARMessage("Sua vez!");
+                            }, 1000);
+                        }
+                    });
+                } catch (e) {
+                    // Fallback
+                    console.error("Erro animação monstro", e);
+                    if (result.hit) showDamagePopup(result.damage, 'normal');
+                    updateARHUD();
+                }
+            }, 1000);
         }
-    }, 800); // Delay de 0.8s antes do turno do monstro
+    }, 1500);
 }
 
 /**

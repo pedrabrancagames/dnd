@@ -755,9 +755,21 @@ async function handleVictory() {
     // Adiciona XP
     const xpResult = addXP(monster.xp);
 
+    // Inicializa inventário se necessário
+    initInventory();
+
     // Gera loot
     const lootTable = monster.isBoss ? 'boss' : monster.xp > 100 ? 'rare' : 'common';
     const loot = generateLoot(lootTable);
+
+    // Adiciona loot ao inventário
+    loot.forEach(lootItem => {
+        if (lootItem.type === 'gold') {
+            gameState.player.gold = (gameState.player.gold || 0) + lootItem.amount;
+        } else if (lootItem.item) {
+            addItemToInventory(lootItem.item.id, 1);
+        }
+    });
 
     // Atualiza tela de vitória
     document.getElementById('xp-gained').textContent = `+${monster.xp} XP${xpResult.leveledUp ? ` (Level Up! Nível ${xpResult.newLevel})` : ''}`;

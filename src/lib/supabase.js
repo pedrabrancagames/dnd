@@ -204,3 +204,154 @@ export async function updatePlayer(userId, updates) {
         return { error: err.message };
     }
 }
+
+// ========== PERSISTÊNCIA DE INVENTÁRIO ==========
+
+/**
+ * Busca o inventário do jogador
+ * @param {string} playerId 
+ * @returns {Promise<{inventory: Array|null, error: string|null}>}
+ */
+export async function fetchInventory(playerId) {
+    if (!supabase) return { inventory: [], error: 'Supabase não configurado' };
+
+    try {
+        const { data, error } = await supabase
+            .from('inventory')
+            .select('*')
+            .eq('player_id', playerId);
+
+        if (error) return { inventory: null, error: error.message };
+
+        return { inventory: data, error: null };
+    } catch (err) {
+        return { inventory: null, error: err.message };
+    }
+}
+
+/**
+ * Adiciona item ao inventário no banco
+ * @param {string} playerId 
+ * @param {Object} itemData 
+ */
+export async function addToInventoryDB(playerId, itemData) {
+    if (!supabase) return { error: 'Supabase não configurado' };
+
+    try {
+        const { data, error } = await supabase
+            .from('inventory')
+            .insert({
+                player_id: playerId,
+                item_id: itemData.itemId,
+                quantity: itemData.quantity,
+                equipped: itemData.equipped || false,
+                slot: itemData.slot || null
+            })
+            .select()
+            .single();
+
+        return { data, error: error?.message };
+    } catch (err) {
+        return { error: err.message };
+    }
+}
+
+/**
+ * Atualiza item no inventário
+ * @param {string} instanceId 
+ * @param {Object} updates 
+ */
+export async function updateInventoryItemDB(instanceId, updates) {
+    if (!supabase) return { error: 'Supabase não configurado' };
+
+    try {
+        // Se instanceId não for UUID válido (ex: gerado localmente), ignora
+        if (!instanceId || instanceId.startsWith('item_')) return { error: null };
+
+        const { error } = await supabase
+            .from('inventory')
+            .update(updates)
+            .eq('id', instanceId);
+
+        return { error: error?.message };
+    } catch (err) {
+        return { error: err.message };
+    }
+}
+
+/**
+ * Remove item do inventário
+ * @param {string} instanceId 
+ */
+export async function deleteFromInventoryDB(instanceId) {
+    if (!supabase) return { error: 'Supabase não configurado' };
+
+    try {
+        if (!instanceId || instanceId.startsWith('item_')) return { error: null };
+
+        const { error } = await supabase
+            .from('inventory')
+            .delete()
+            .eq('id', instanceId);
+
+        return { error: error?.message };
+    } catch (err) {
+        return { error: err.message };
+    }
+}
+
+// ========== PERSISTÊNCIA DE MONSTROS ==========
+
+/**
+ * Registra a morte de um monstro
+ * @param {string} cellId 
+ * @param {string} monsterId 
+ * @returns {Promise<{error: string|null}>}
+ */
+export async function recordMonsterKill(cellId, monsterId) {
+    if (!supabase) return { error: 'Supabase não configurado' };
+
+    try {
+        // Usamos active_monsters para registrar kills
+        // spawned_at = agora, defeated_at = agora
+        // Isso marca que ele "já foi spawnado e já morreu"
+        const { error } = await supabase
+            .from('active_monsters')
+            .insert({
+                cell_id: cellId,
+                monster_id: monsterId,
+                hp_current: 0,
+                defeated_at: new Date().toISOString()
+            });
+
+        return { error: error?.message };
+    } catch (err) {
+        return { error: err.message };
+    }
+}
+
+/**
+ * Busca monstros derrotados recentemente em uma lista de células
+ * @param {string[]} cellIds 
+ * @returns {Promise<{killedMonsters: Array|null, error: string|null}>}
+ */
+export async function getDefeatedMonsters(cellIds) {
+    if (!supabase) return { killedMonsters: [], error: 'Supabase não configurado' };
+
+    try {
+        // Busca monstros derrotados nas últimas 2 horas (exemplo de tempo de respawn)
+        const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+
+        const { data, error } = await supabase
+            .from('active_monsters')
+            .select('cell_id, monster_id, defeated_at')
+            .in('cell_id', cellIds)
+            .gt('defeated_at', twoHoursAgo);
+
+        if (error) return { killedMonsters: [], error: error.message };
+
+        return { killedMonsters: data, error: null };
+    } catch (err) {
+        return { killedMonsters: [], error: err.message };
+    }
+}

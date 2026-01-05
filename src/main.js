@@ -19,6 +19,7 @@ import { grantXP, getXPProgress, getXPForLevel, getTotalXPForLevel, spendAttribu
 import { getClassDefinition, useClassAbility, getAbilityCooldownRemaining } from './game/classes.js';
 import { initInventory, addItemToInventory, equipItem, unequipItem, useItem, getInventoryWithDetails, getEquippedItem, recalculateEquipmentStats } from './game/inventory.js';
 import { rollD20Animation } from './ar/dice-animation.js';
+import { recordMonsterKill, getDefeatedMonsters } from './lib/supabase.js';
 
 // Leaflet map instance
 let map = null;
@@ -448,7 +449,12 @@ function updateMapHUD() {
  * @param {number} lat 
  * @param {number} lng 
  */
-function spawnMonstersInNearby(lat, lng) {
+/**
+ * Spawna monstros nas células próximas
+ * @param {number} lat 
+ * @param {number} lng 
+ */
+async function spawnMonstersInNearby(lat, lng) {
     const currentCellId = getCellId(lat, lng);
     const nearbyCells = getNearbyCells(currentCellId, 2);
 
@@ -458,6 +464,9 @@ function spawnMonstersInNearby(lat, lng) {
     });
     monsterMarkers = [];
     gameState.nearbyMonsters = [];
+
+    // Busca tabela de monstros mortos
+    const { killedMonsters } = await getDefeatedMonsters(nearbyCells);
 
     // Spawna monstros em cada célula
     nearbyCells.forEach(cellId => {
@@ -478,6 +487,19 @@ function spawnMonstersInNearby(lat, lng) {
         if (pool.length === 0) return;
 
         const template = selectRandomMonster(pool);
+
+        // Verifica se já matou este monstro (Combinação Célula + ID Monstro)
+        // Isso é uma aproximação. Se o mesmo tipo de monstro spawnar na mesma célula, 
+        // ele será considerado "morto" se houver registro recente.
+        const isDead = killedMonsters?.some(k =>
+            k.cell_id === cellId && k.monster_id === template.id
+        );
+
+        if (isDead) {
+            // Monstro morto recentemente, não spawna
+            return;
+        }
+
         const monster = createMonsterInstance(template, cellId);
 
         gameState.nearbyMonsters.push(monster);
@@ -838,6 +860,13 @@ async function handleVictory() {
     // Encerra sessão AR
     if (isARSessionActive()) {
         await endARSession();
+    }
+
+    // Registra morte (Persistência)
+    if (gameState.currentCell) {
+        // Enfire and forget para não travar UI
+        recordMonsterKill(gameState.currentCell, monster.id)
+            .catch(err => console.error("Erro ao salvar kill:", err));
     }
 
     // Adiciona XP

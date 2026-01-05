@@ -1261,7 +1261,102 @@ body {
   transition: var(--transition-fast);
 }
 
-.map-btn:hover {
-  border-color: var(--color-accent-gold);
-  background: rgba(255, 215, 0, 0.2);
+border-color: var(--color-accent-gold);
+background: rgba(255, 215, 0, 0.2);
+}
+
+/* ===== New Profile Styles ===== */
+.currency-section {
+  margin: var(--spacing-md) 0;
+  text-align: center;
+}
+
+.gold-display {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--color-accent-gold);
+  border-radius: var(--radius-full);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-lg);
+  font-weight: bold;
+  color: var(--color-accent-gold);
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
+}
+
+.stats-section {
+  margin-top: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+}
+
+.stats-section h2,
+.ability-section h2 {
+  font-size: var(--font-size-md);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-sm);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: var(--spacing-xs);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-sm);
+}
+
+.stat-item {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: var(--transition-fast);
+}
+
+.stat-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.stat-label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.stat-value {
+  font-size: var(--font-size-lg);
+  font-weight: bold;
+  color: var(--color-text-primary);
+}
+
+.ability-section {
+  margin-bottom: var(--spacing-lg);
+}
+
+.class-ability {
+  background: rgba(255, 215, 0, 0.05);
+  border-left: 3px solid var(--color-accent-gold);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  padding: var(--spacing-md);
+}
+
+.ability-name {
+  color: var(--color-accent-gold);
+  font-size: var(--font-size-md);
+  font-weight: bold;
+  margin-bottom: var(--spacing-xs);
+  display: block;
+}
+
+.ability-desc {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  margin: 0;
 }

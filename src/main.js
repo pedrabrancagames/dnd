@@ -496,7 +496,16 @@ async function spawnMonstersInNearby(lat, lng) {
         );
 
         if (isDead) {
-            // Monstro morto recentemente, não spawna
+            // Monstro morto recentemente (banco), não spawna
+            return;
+        }
+
+        // Verifica duplicidade local e estado de HP
+        const existingMonster = gameState.nearbyMonsters.find(m => m.cellId === cellId);
+        if (existingMonster && existingMonster.currentHp <= 0) {
+            // Se já existe e tá morto (0 HP), não spawna de novo e garante limpeza
+            const idx = gameState.nearbyMonsters.indexOf(existingMonster);
+            if (idx > -1) gameState.nearbyMonsters.splice(idx, 1);
             return;
         }
 
@@ -869,6 +878,16 @@ async function handleVictory() {
             .catch(err => console.error("Erro ao salvar kill:", err));
     }
 
+    // Remove do mapa localmente
+    const markerIndex = gameState.nearbyMonsters.findIndex(m => m.id === monster.id);
+    if (markerIndex !== -1) {
+        gameState.nearbyMonsters.splice(markerIndex, 1);
+        if (monsterMarkers[markerIndex]) {
+            map.removeLayer(monsterMarkers[markerIndex]);
+            monsterMarkers.splice(markerIndex, 1);
+        }
+    }
+
     // Adiciona XP
     let xpResult = null;
     try {
@@ -1041,14 +1060,15 @@ function selectInventoryItem(invItem) {
     }
     if (invItem.item.acBonus) {
         stats.innerHTML += `<div>AC: +${invItem.item.acBonus}</div>`;
-    }
-
+        ```
     // Mostra botões apropriados
     const equipBtn = document.getElementById('equip-item-btn');
     const useBtn = document.getElementById('use-item-btn');
+    const unequipBtn = document.getElementById('unequip-item-btn');
 
     if (invItem.item.type === 'consumable') {
         equipBtn.style.display = 'none';
+        if (unequipBtn) unequipBtn.style.display = 'none';
         useBtn.style.display = 'block';
         useBtn.onclick = () => {
             const result = useItem(invItem.id);
@@ -1058,14 +1078,32 @@ function selectInventoryItem(invItem) {
             }
         };
     } else {
-        equipBtn.style.display = 'block';
         useBtn.style.display = 'none';
-        equipBtn.onclick = () => {
-            const result = equipItem(invItem.id);
-            if (result.success) {
-                updateInventoryScreen();
+        
+        if (invItem.equipped) {
+            equipBtn.style.display = 'none';
+            if (unequipBtn) {
+                unequipBtn.style.display = 'block';
+                unequipBtn.onclick = async () => {
+                    const result = await unequipItem(invItem.slot);
+                    if (result.success) {
+                        updateInventoryScreen();
+                        // Atualiza seleção para refletir estado
+                        selectInventoryItem(invItem); 
+                    }
+                };
             }
-        };
+        } else {
+            equipBtn.style.display = 'block';
+            if (unequipBtn) unequipBtn.style.display = 'none';
+            equipBtn.onclick = async () => {
+                const result = await equipItem(invItem.id);
+                if (result.success) {
+                    updateInventoryScreen();
+                    selectInventoryItem(invItem);
+                }
+            };
+        }
     }
 }
 
@@ -1092,45 +1130,51 @@ function updateCharacterScreen() {
     document.getElementById('char-class-icon').textContent = getClassIcon(player.class);
     document.getElementById('char-name').textContent = player.name;
     document.getElementById('char-class').textContent = classDef?.namePt || player.class;
-    document.getElementById('char-level').textContent = `Nível ${player.level}`;
+    document.getElementById('char-level').textContent = `Nível ${ player.level } `;
 
     // Barra de XP
     const xpProgress = getXPProgress(player.xp, player.level);
     const xpNeeded = getXPForLevel(player.level + 1);
     const xpCurrent = player.xp - getTotalXPForLevel(player.level);
-
-    document.getElementById('xp-fill').style.width = `${xpProgress}%`;
-    document.getElementById('xp-text').textContent = `${xpCurrent} / ${xpNeeded} XP`;
-
-    // Atributos
-    document.getElementById('attr-str').textContent = player.str;
-    document.getElementById('attr-dex').textContent = player.dex;
-    document.getElementById('attr-con').textContent = player.con;
-    document.getElementById('attr-int').textContent = player.int;
-    document.getElementById('attr-wis').textContent = player.wis;
-    document.getElementById('attr-cha').textContent = player.cha;
-
-    // Pontos de atributo
-    const points = player.attributePoints || 0;
-    document.getElementById('attribute-points').textContent = points > 0 ? `(${points} pontos)` : '';
-
-    // Mostra/esconde botões de +
-    document.querySelectorAll('.attr-up-btn').forEach(btn => {
-        btn.classList.toggle('visible', points > 0);
-    });
-
-    // Stats derivados
-    document.getElementById('char-hp').textContent = `${player.currentHp}/${player.maxHp}`;
-    document.getElementById('char-mana').textContent = `${player.currentMana}/${player.maxMana}`;
-    document.getElementById('char-ac').textContent = player.ac;
-    document.getElementById('char-attack').textContent = `+${player.attackMod}`;
-
-    // Habilidade de classe
-    if (classDef) {
-        document.querySelector('#class-ability .ability-name').textContent = classDef.ability.namePt;
-        document.querySelector('#class-ability .ability-desc').textContent = classDef.ability.description;
+    
+    // Atualiza ouro
+    const goldElem = document.getElementById('char-gold');
+    if (goldElem) {
+        goldElem.textContent = player.gold || 0;
     }
-}
 
-// Inicia a aplicação quando o DOM estiver pronto
-document.addEventListener('DOMContentLoaded', init);
+    document.getElementById('xp-fill').style.width = `${ xpProgress }% `;
+    document.getElementById('xp-text').textContent = `${ xpCurrent } / ${xpNeeded} XP`;
+
+        // Atributos
+        document.getElementById('attr-str').textContent = player.str;
+        document.getElementById('attr-dex').textContent = player.dex;
+        document.getElementById('attr-con').textContent = player.con;
+        document.getElementById('attr-int').textContent = player.int;
+        document.getElementById('attr-wis').textContent = player.wis;
+        document.getElementById('attr-cha').textContent = player.cha;
+
+        // Pontos de atributo
+        const points = player.attributePoints || 0;
+        document.getElementById('attribute-points').textContent = points > 0 ? `(${points} pontos)` : '';
+
+        // Mostra/esconde botões de +
+        document.querySelectorAll('.attr-up-btn').forEach(btn => {
+            btn.classList.toggle('visible', points > 0);
+        });
+
+        // Stats derivados
+        document.getElementById('char-hp').textContent = `${player.currentHp}/${player.maxHp}`;
+        document.getElementById('char-mana').textContent = `${player.currentMana}/${player.maxMana}`;
+        document.getElementById('char-ac').textContent = player.ac;
+        document.getElementById('char-attack').textContent = `+${player.attackMod}`;
+
+        // Habilidade de classe
+        if (classDef) {
+            document.querySelector('#class-ability .ability-name').textContent = classDef.ability.namePt;
+            document.querySelector('#class-ability .ability-desc').textContent = classDef.ability.description;
+        }
+    }
+
+    // Inicia a aplicação quando o DOM estiver pronto
+    document.addEventListener('DOMContentLoaded', init);

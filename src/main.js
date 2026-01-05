@@ -1084,6 +1084,7 @@ function selectInventoryItem(invItem) {
             equipBtn.style.display = 'none';
             if (unequipBtn) {
                 unequipBtn.style.display = 'block';
+                unequipBtn.classList.remove('hidden'); // Garante que a classe não esconda
                 unequipBtn.onclick = async () => {
                     const result = await unequipItem(invItem.slot);
                     if (result.success) {
@@ -1095,7 +1096,10 @@ function selectInventoryItem(invItem) {
             }
         } else {
             equipBtn.style.display = 'block';
-            if (unequipBtn) unequipBtn.style.display = 'none';
+            if (unequipBtn) {
+                unequipBtn.style.display = 'none';
+                unequipBtn.classList.add('hidden');
+            }
             equipBtn.onclick = async () => {
                 const result = await equipItem(invItem.id);
                 if (result.success) {

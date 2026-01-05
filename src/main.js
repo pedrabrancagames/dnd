@@ -11,7 +11,7 @@ import { signIn, signUp, getSession, getPlayer, createPlayer, onAuthStateChange 
 import { getCurrentPosition, startWatching, onPositionChange } from './lib/gps.js';
 import { getCellId, getNearbyCells, getCellBiome, getCellCenter } from './lib/cells.js';
 import { getMonstersByBiome, getMonstersByCR, selectRandomMonster, createMonsterInstance } from './data/monsters.js';
-import { gameState, setPlayer, setScreen, startCombat, endCombat, addXP, getClassIcon, updateDerivedStats } from './game/state.js';
+import { gameState, setPlayer, setScreen, startCombat, endCombat, getClassIcon, updateDerivedStats } from './game/state.js';
 import { playerAttack, monsterAttack, isMonsterDefeated, isPlayerDefeated, castDamageSpell, useHealingPotion, attemptFlee } from './game/combat.js';
 import { generateLoot, getRarityColor, getItemById } from './data/items.js';
 import { startARSession, endARSession, showMonsterDamageEffect, showMonsterDeathEffect, isARSessionActive } from './ar/ar-manager.js';
@@ -870,7 +870,14 @@ async function handleVictory() {
     }
 
     // Adiciona XP
-    const xpResult = addXP(monster.xp);
+    let xpResult = null;
+    try {
+        xpResult = await grantXP(monster.xp);
+    } catch (e) {
+        console.error("Erro ao dar XP:", e);
+        // Fallback local se falhar
+        xpResult = { newXP: gameState.player.xp + monster.xp, leveledUp: false };
+    }
 
     // Sempre atualiza stats derivados após vitória
     updateDerivedStats();

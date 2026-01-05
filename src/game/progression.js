@@ -3,6 +3,7 @@
  */
 
 import { gameState } from './state.js';
+import { updatePlayer } from '../lib/supabase.js';
 
 /**
  * Calcula XP necessário para um nível específico
@@ -73,18 +74,22 @@ export function getAttributePointsForLevel(level) {
     return Math.floor(level / 2);
 }
 
+// ... (imports)
+
+// ...
+
 /**
  * Adiciona XP ao jogador e verifica level up
  * @param {number} xpAmount 
- * @returns {{
+ * @returns {Promise<{
  *   newXP: number,
  *   newLevel: number,
  *   leveledUp: boolean,
  *   levelsGained: number,
  *   newAttributePoints: number
- * }}
+ * }>}
  */
-export function grantXP(xpAmount) {
+export async function grantXP(xpAmount) {
     if (!gameState.player) return null;
 
     const player = gameState.player;
@@ -112,6 +117,20 @@ export function grantXP(xpAmount) {
 
     if (newAttributePoints > 0) {
         player.attributePoints = (player.attributePoints || 0) + newAttributePoints;
+    }
+
+    // Persiste no banco de dados
+    if (player.id) {
+        await updatePlayer(player.id, {
+            xp: player.xp,
+            level: player.level,
+            hp_current: player.currentHp,
+            hp_max: player.maxHp,
+            mana_current: player.currentMana,
+            mana_max: player.maxMana,
+            // Salva atributos se mudaram (futuro)
+            // attribute_points: player.attributePoints // Se tiver essa coluna no banco
+        });
     }
 
     return {
@@ -159,9 +178,9 @@ function updateStatsForLevel(player) {
 /**
  * Gasta um ponto de atributo para aumentar um atributo
  * @param {string} attribute - 'str', 'dex', 'con', 'int', 'wis', 'cha'
- * @returns {boolean} sucesso
+ * @returns {Promise<boolean>} sucesso
  */
-export function spendAttributePoint(attribute) {
+export async function spendAttributePoint(attribute) {
     if (!gameState.player) return false;
 
     const player = gameState.player;
@@ -180,6 +199,24 @@ export function spendAttributePoint(attribute) {
     } else if (attribute === 'int') {
         player.maxMana = player.int * 2 + player.level * 3;
         player.currentMana = Math.min(player.maxMana, player.currentMana);
+    }
+
+    // Persiste no banco
+    if (player.id) {
+        const updates = {
+            [attribute]: player[attribute],
+            // attribute_points: player.attributePoints
+        };
+
+        // Se recalculou stats, salva eles também
+        if (attribute === 'con' || attribute === 'int') {
+            updates.hp_current = player.currentHp;
+            updates.hp_max = player.maxHp;
+            updates.mana_current = player.currentMana;
+            updates.mana_max = player.maxMana;
+        }
+
+        await updatePlayer(player.id, updates);
     }
 
     return true;

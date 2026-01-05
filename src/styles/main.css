@@ -639,8 +639,9 @@ body {
 .ar-monster-info {
   position: absolute;
   top: var(--spacing-md);
-  left: 50%;
-  transform: translateX(-50%);
+  right: var(--spacing-md);
+  left: auto;
+  transform: none;
   text-align: center;
   background: var(--color-surface-glass);
   backdrop-filter: blur(8px);

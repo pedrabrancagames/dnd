@@ -805,6 +805,11 @@ function handleFlee() {
 
     if (result.success) {
         clearInterval(monsterTurnInterval);
+
+        if (isARSessionActive()) {
+            await endARSession();
+        }
+
         endCombat();
         setTimeout(() => setScreen('map'), 1000);
     } else {

@@ -24,7 +24,9 @@ export const gameState = {
     currentCell: null,
     nearbyMonsters: [],
     lastActionTime: 0,
-    actionCooldown: 2000 // 2 segundos
+    actionCooldown: 2000, // 2 segundos
+    lastRestTime: { short: 0, long: 0 },
+    restCooldowns: { short: 5 * 60 * 1000, long: 30 * 60 * 1000 } // 5min short, 30min long
 };
 
 /**
@@ -240,4 +242,65 @@ export function getClassDamage(playerClass) {
         cleric: '1d6'
     };
     return damages[playerClass] || '1d6';
+}
+
+/**
+ * Realiza um descanso (curto ou longo)
+ * @param {'short'|'long'} type 
+ * @returns {{success: boolean, message: string}}
+ */
+export function performRest(type) {
+    if (!gameState.player) return { success: false, message: 'Jogador não encontrado' };
+    if (gameState.inCombat) return { success: false, message: 'Não pode descansar em combate!' };
+
+    const now = Date.now();
+    const lastRest = gameState.lastRestTime[type] || 0;
+    const cooldown = gameState.restCooldowns[type];
+    const remaining = (lastRest + cooldown) - now;
+
+    if (remaining > 0) {
+        const min = Math.ceil(remaining / 60000);
+        return { success: false, message: `Aguarde ${min} min para descansar novamente.` };
+    }
+
+    const player = gameState.player;
+    let recoveredHp = 0;
+    let recoveredMana = 0;
+
+    if (type === 'short') {
+        // Recupera 50% do HP máximo
+        const healAmount = Math.floor(player.maxHp * 0.5);
+        const oldHp = player.currentHp;
+        player.currentHp = Math.min(player.maxHp, player.currentHp + healAmount);
+        recoveredHp = player.currentHp - oldHp;
+
+        // Short rest recupera um pouco de mana (Warlock style? Ou geral?)
+        // Vamos dar 10% mana
+        const manaAmount = Math.floor(player.maxMana * 0.1);
+        const oldMana = player.currentMana;
+        player.currentMana = Math.min(player.maxMana, player.currentMana + manaAmount);
+        recoveredMana = player.currentMana - oldMana;
+
+        gameState.lastRestTime.short = now;
+
+    } else if (type === 'long') {
+        // Recupera tudo
+        const oldHp = player.currentHp;
+        player.currentHp = player.maxHp;
+        recoveredHp = player.currentHp - oldHp;
+
+        const oldMana = player.currentMana;
+        player.currentMana = player.maxMana;
+        recoveredMana = player.currentMana - oldMana;
+
+        gameState.lastRestTime.long = now;
+        // Long rest também reseta short rest cooldown? Geralmente sim, mas vamos manter separado por simplicidade
+    }
+
+    // Salvar no DB? Idealmente sim, o loop principal deve persistir o estado periodicamente.
+
+    return {
+        success: true,
+        message: `Descanso ${type === 'short' ? 'Curto' : 'Longo'} concluído. +${recoveredHp} HP, +${recoveredMana} Mana.`
+    };
 }

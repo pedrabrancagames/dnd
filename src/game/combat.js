@@ -3,8 +3,10 @@
  * Implementa regras de D&D simplificadas para AR
  */
 
-import { rollAttack, rollDamage, getModifier } from '../lib/dice.js';
-import { gameState, recordAction, isOnCooldown, damagePlayer, getClassDamage } from './state.js';
+import { rollAttack, rollDamage, rollSave, getModifier } from '../lib/dice.js';
+import { gameState, recordAction, isOnCooldown, damagePlayer } from './state.js';
+import { getEquippedWeaponDamage } from './inventory.js';
+import { getClassDefinition } from './classes.js';
 
 /**
  * Resultado de um ataque
@@ -33,29 +35,59 @@ export function playerAttack() {
     const player = gameState.player;
     const monster = gameState.currentMonster;
 
+    // Obtém dados da arma equipada
+    const weaponData = getEquippedWeaponDamage();
+    // Ex: { damage: '1d8', type: 'slashing', bonus: 1 }
+
+    // Determina atributo de ataque baseado na classe/arma
+    // Por simplificação: Mago uses INT, Archer uses DEX, Warrior/Cleric uses STR (unless Finesse, but keeping simple)
+    let attackStat = player.strMod;
+    if (player.class === 'mage') attackStat = player.intMod;
+    if (player.class === 'archer') attackStat = player.dexMod; // Bows use DEX
+
+    const attackBonus = attackStat + player.proficiencyBonus + (weaponData.bonus || 0);
+
     // Rola ataque
-    const attackResult = rollAttack(player.attackMod, monster.ac);
+    const attackResult = rollAttack(attackBonus, monster.ac);
 
     let damage = 0;
     let message = '';
 
     if (attackResult.hit) {
         // Calcula dano
-        const baseDamage = getClassDamage(player.class);
-        const damageMod = player.class === 'mage' ? player.intMod :
-            player.class === 'archer' ? player.dexMod : player.strMod;
+        // Constrói notação: "1d8 + STR + WeaponBonus"
+        // Se houver bonusDamage (ex: Flame Tongue), adiciona depois
 
-        const damageResult = rollDamage(`${baseDamage}+${damageMod}`, attackResult.isCritical);
-        damage = damageResult.total;
+        let damageMod = attackStat + (weaponData.bonus || 0);
+        const damageInput = `${weaponData.damage}+${damageMod}`;
 
-        // Aplica dano ao monstro
+        const damageRoll = rollDamage(damageInput, attackResult.isCritical);
+        let totalDamage = damageRoll.total;
+
+        // Dano extra da arma (fogo, etc)
+        if (weaponData.bonusDamage) {
+            const extraRoll = rollDamage(weaponData.bonusDamage, attackResult.isCritical);
+            totalDamage += extraRoll.total;
+            // Nota: Se o tipo for diferente, deveria calcular separado, mas por simplicidade somamos
+            // Idealmente: calculateDamage para base e extra separados.
+        }
+
+        // Aplica resistências/vulnerabilidades
+        const finalDamage = calculateDamage(totalDamage, weaponData.type, monster);
+        damage = finalDamage.amount;
+
         monster.currentHp = Math.max(0, monster.currentHp - damage);
 
         if (attackResult.isCritical) {
-            message = `CRÍTICO! ${damage} de dano!`;
+            message = `CRÍTICO! ${damage} de dano (${finalDamage.typeDisplay})!`;
         } else {
-            message = `Acertou! ${damage} de dano`;
+            message = `Acertou! ${damage} de dano (${finalDamage.typeDisplay})`;
         }
+
+        if (finalDamage.factor === 2) message += " (Vulnerável!)";
+        if (finalDamage.factor === 0.5) message += " (Resistente!)";
+        if (finalDamage.factor === 0) message += " (Imune!)";
+
     } else {
         if (attackResult.isFumble) {
             message = 'Falha crítica!';
@@ -77,6 +109,46 @@ export function playerAttack() {
 }
 
 /**
+ * Calcula dano considerando resistências e vulnerabilidades
+ * @param {number} amount 
+ * @param {string} type 
+ * @param {Object} target 
+ * @returns {{amount: number, factor: number, typeDisplay: string}}
+ */
+function calculateDamage(amount, type, target) {
+    let factor = 1;
+
+    if (target.immunities?.includes(type)) {
+        factor = 0;
+    } else if (target.vulnerabilities?.includes(type)) {
+        factor = 2;
+    } else if (target.resistances?.includes(type)) {
+        factor = 0.5;
+    }
+
+    return {
+        amount: Math.floor(amount * factor),
+        factor,
+        typeDisplay: translateDamageType(type)
+    };
+}
+
+function translateDamageType(type) {
+    const map = {
+        slashing: 'Cortante',
+        piercing: 'Perfurante',
+        bludgeoning: 'Concussão',
+        fire: 'Fogo',
+        cold: 'Gelo',
+        lightning: 'Raio',
+        poison: 'Veneno',
+        radiant: 'Radiante',
+        necrotic: 'Necrótico'
+    };
+    return map[type] || type;
+}
+
+/**
  * Executa um ataque do monstro contra o jogador
  * @returns {AttackResult|null}
  */
@@ -88,10 +160,15 @@ export function monsterAttack() {
     const monster = gameState.currentMonster;
     const player = gameState.player;
 
-    // Monstro tem modificador baseado em seu CR
-    const monsterMod = Math.floor(monster.ac / 3);
+    // Monstro tem modificador baseado em seu CR se não especificado
+    // Mas monsters.js tem dano fixo? "1d6+2"
+    // Vamos assumir hit bonus = floor(CR * 2) + 2 se não tiver
+    // Na verdade, vamos simplificar: Monster Hit Bonus ~ AC/2 - 2
 
-    const attackResult = rollAttack(monsterMod, player.ac);
+    // Melhor: Criaremos um valor arbitrário baseado no CR se não existir
+    const attackBonus = Math.floor(monster.cr * 2) + 3;
+
+    const attackResult = rollAttack(attackBonus, player.ac);
 
     let damage = 0;
     let message = '';
@@ -100,6 +177,7 @@ export function monsterAttack() {
         const damageResult = rollDamage(monster.damage, attackResult.isCritical);
         damage = damageResult.total;
 
+        // TODO: Player resistances (from Armor/Racial)
         const died = damagePlayer(damage);
 
         if (attackResult.isCritical) {
@@ -126,31 +204,72 @@ export function monsterAttack() {
 }
 
 /**
- * Usa uma magia de dano
+ * Definição de Magias
+ */
+const SPELLS = {
+    fireBolt: {
+        id: 'fireBolt',
+        name: 'Fire Bolt',
+        type: 'attack', // Attack Roll
+        damage: '1d10',
+        damageType: 'fire',
+        manaCost: 0, // Cantrip
+        scaleWithLevel: true // 2d10 at lvl 5, etc - TODO
+    },
+    magicMissile: {
+        id: 'magicMissile',
+        name: 'Magic Missile',
+        type: 'auto', // Auto hit
+        damage: '3d4+3',
+        damageType: 'force',
+        manaCost: 10
+    },
+    iceShard: {
+        id: 'iceShard',
+        name: 'Ice Shard',
+        type: 'attack',
+        damage: '1d8',
+        damageType: 'cold',
+        manaCost: 5
+    },
+    fireball: {
+        id: 'fireball',
+        name: 'Fireball',
+        type: 'save',
+        saveAttr: 'dex', // Dexterity Save
+        damage: '8d6',
+        damageType: 'fire',
+        manaCost: 30,
+        halfOnSave: true
+    },
+    cureWounds: {
+        id: 'cureWounds',
+        name: 'Cure Wounds',
+        type: 'heal',
+        heal: '1d8',
+        manaCost: 10
+    }
+};
+
+/**
+ * Usa uma magia
  * @param {string} spellId 
  * @returns {Object|null}
  */
-export function castDamageSpell(spellId) {
+export function castSpell(spellId) {
     if (!gameState.player || !gameState.currentMonster) {
-        return null;
+        return null; // Alguns spells podem ser usados fora de combate, mas por enquanto exige target
     }
 
     if (isOnCooldown()) {
-        return null;
+        return { success: false, message: 'Aguarde o cooldown' };
     }
 
     const player = gameState.player;
     const monster = gameState.currentMonster;
+    const spell = SPELLS[spellId];
 
-    // Definição de magias básicas
-    const spells = {
-        fireBolt: { name: 'Fire Bolt', damage: '1d10', manaCost: 5, type: 'fire' },
-        iceShard: { name: 'Ice Shard', damage: '1d8', manaCost: 5, type: 'ice' },
-        lightning: { name: 'Lightning', damage: '2d8', manaCost: 10, type: 'lightning' }
-    };
-
-    const spell = spells[spellId];
-    if (!spell) return null;
+    if (!spell) return { success: false, message: 'Magia desconhecida' };
 
     if (player.currentMana < spell.manaCost) {
         return { success: false, message: 'Mana insuficiente!' };
@@ -158,44 +277,75 @@ export function castDamageSpell(spellId) {
 
     player.currentMana -= spell.manaCost;
 
-    // Magias usam INT para acertar e dano
-    const attackResult = rollAttack(player.intMod + player.proficiencyBonus, monster.ac);
+    // Spellcasting mod (INT for Mage, WIS for Cleric)
+    let spellMod = player.intMod;
+    if (player.class === 'cleric') spellMod = player.wisMod;
 
-    let damage = 0;
-    let message = '';
+    let result = { success: true, message: '' };
 
-    if (attackResult.hit) {
-        const damageResult = rollDamage(`${spell.damage}+${player.intMod}`, attackResult.isCritical);
-        damage = damageResult.total;
+    // Lógica por tipo de magia
+    if (spell.type === 'attack') {
+        const attackResult = rollAttack(spellMod + player.proficiencyBonus, monster.ac);
 
-        // Verifica vulnerabilidades
-        if (monster.vulnerabilities && monster.vulnerabilities.includes(spell.type)) {
-            damage *= 2;
-            message = `FRAQUEZA! ${spell.name} causa ${damage} de dano!`;
-        } else if (monster.immunities && monster.immunities.includes(spell.type)) {
-            damage = 0;
-            message = `${monster.name} é IMUNE a ${spell.type}!`;
+        if (attackResult.hit) {
+            const dmgRoll = rollDamage(`${spell.damage}+${spellMod}`, attackResult.isCritical);
+            const final = calculateDamage(dmgRoll.total, spell.damageType, monster);
+
+            monster.currentHp = Math.max(0, monster.currentHp - final.amount);
+
+            result.message = `${spell.name}: ${final.amount} dano (${final.typeDisplay})`;
+            if (attackResult.isCritical) result.message = `CRÍTICO! ${result.message}`;
         } else {
-            message = attackResult.isCritical
-                ? `CRÍTICO! ${spell.name} causa ${damage} de dano!`
-                : `${spell.name} causa ${damage} de dano!`;
+            result.message = `${spell.name} errou!`;
         }
 
-        monster.currentHp = Math.max(0, monster.currentHp - damage);
-    } else {
-        message = `${spell.name} erra o alvo!`;
+    } else if (spell.type === 'auto') {
+        // Auto hit (Magic Missile)
+        const dmgRoll = rollDamage(spell.damage); // Usually no mod added to MM damage
+        const final = calculateDamage(dmgRoll.total, spell.damageType, monster);
+
+        monster.currentHp = Math.max(0, monster.currentHp - final.amount);
+        result.message = `${spell.name}: ${final.amount} dano (Infalível)`;
+
+    } else if (spell.type === 'save') {
+        // Saving Throw
+        // DC = 8 + prof + mod
+        const dc = 8 + player.proficiencyBonus + spellMod;
+
+        // Monster rolls save
+        // Monster save mod?? Assuming flat Ability Mod from (10 + CR) approximation or specific
+        // Simplification: Monster Save Mod = floor(CR/2)
+        const monsterSaveMod = Math.floor(monster.cr / 2); // Very rough, ideally monster has stats
+
+        const saveResult = rollSave(monsterSaveMod, dc);
+
+        let dmgRoll = rollDamage(spell.damage);
+        let finalDamage = dmgRoll.total;
+
+        if (saveResult.success) {
+            if (spell.halfOnSave) finalDamage = Math.floor(finalDamage / 2);
+            else finalDamage = 0;
+            result.message = `${monster.name} resistiu ao ${spell.name}! (${finalDamage} dano)`;
+        } else {
+            result.message = `${monster.name} falhou contra ${spell.name}! (${finalDamage} dano)`;
+        }
+
+        const final = calculateDamage(finalDamage, spell.damageType, monster);
+        monster.currentHp = Math.max(0, monster.currentHp - final.amount);
+
+    } else if (spell.type === 'heal') {
+        const healRoll = rollDamage(`${spell.heal}+${spellMod}`);
+        const oldHp = player.currentHp;
+        player.currentHp = Math.min(player.maxHp, player.currentHp + healRoll.total);
+        result.message = `Curou ${player.currentHp - oldHp} HP`;
     }
 
     recordAction();
-
-    return {
-        success: true,
-        hit: attackResult.hit,
-        damage,
-        spellType: spell.type,
-        message
-    };
+    return result;
 }
+
+// Wrapper for compatibility if needed, or replace usages
+export const castDamageSpell = castSpell;
 
 /**
  * Usa poção de cura
@@ -210,7 +360,10 @@ export function useHealingPotion() {
         return { success: false, message: 'Aguarde o cooldown' };
     }
 
-    // TODO: Verificar inventário
+    // TODO: Verificar inventário (consumir item)
+    // Por enquanto, infinito para teste ou se tiver no inventário
+    // Idealmente chamar inventory.useItem
+
     const healAmount = rollDamage('2d4+2', false).total;
 
     const oldHp = gameState.player.currentHp;

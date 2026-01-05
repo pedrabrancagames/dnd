@@ -336,6 +336,14 @@
           <div class="gold-display">💰 <span id="char-gold">0</span></div>
         </div>
 
+        <div class="rest-section">
+          <h2>Descansar</h2>
+          <div class="rest-buttons">
+            <button id="rest-short-btn" class="btn-secondary">Descanso Curto</button>
+            <button id="rest-long-btn" class="btn-primary">Descanso Longo</button>
+          </div>
+        </div>
+
         <div class="stats-section">
           <h2>Estatísticas</h2>
           <div class="stats-grid">
@@ -367,48 +375,16 @@
         </div>
       </div>
     </div>
-    <!-- Fim character-panel e screen -->
-  </div>
-  </div>
 
-  <div class="derived-stats">
-    <div class="stat-row">
-      <span>HP:</span>
-      <span id="char-hp">100/100</span>
+    <!-- Defeat Screen -->
+    <div id="defeat-screen" class="screen overlay">
+      <div class="defeat-content">
+        <h1>Derrotado...</h1>
+        <p>Você foi incapacitado em combate.</p>
+        <p class="penalty">-10% XP do nível atual</p>
+        <button id="respawn-btn" class="btn-primary">Reviver no Santuário</button>
+      </div>
     </div>
-    <div class="stat-row">
-      <span>Mana:</span>
-      <span id="char-mana">50/50</span>
-    </div>
-    <div class="stat-row">
-      <span>AC:</span>
-      <span id="char-ac">10</span>
-    </div>
-    <div class="stat-row">
-      <span>Ataque:</span>
-      <span id="char-attack">+2</span>
-    </div>
-  </div>
-
-  <div class="ability-section">
-    <h2>Habilidade Especial</h2>
-    <div class="ability-display" id="class-ability">
-      <span class="ability-name">Provocação</span>
-      <span class="ability-desc">Força o monstro a atacar você</span>
-    </div>
-  </div>
-  </div>
-  </div>
-
-  <!-- Defeat Screen -->
-  <div id="defeat-screen" class="screen overlay">
-    <div class="defeat-content">
-      <h1>Derrotado...</h1>
-      <p>Você foi incapacitado em combate.</p>
-      <p class="penalty">-10% XP do nível atual</p>
-      <button id="respawn-btn" class="btn-primary">Reviver no Santuário</button>
-    </div>
-  </div>
   </div>
 
   <script type="module" src="/src/main.js"></script>

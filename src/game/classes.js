@@ -17,6 +17,7 @@ export const CLASS_DEFINITIONS = {
         description: 'Tanque com alto HP e provocação',
         hpPerLevel: 12,
         primaryStat: 'str',
+        savingThrows: ['str', 'con'],
         weapons: ['sword', 'axe', 'hammer'],
         ability: {
             id: 'taunt',
@@ -44,6 +45,7 @@ export const CLASS_DEFINITIONS = {
         description: 'Alto dano mágico em área',
         hpPerLevel: 6,
         primaryStat: 'int',
+        savingThrows: ['int', 'wis'],
         weapons: ['staff', 'orb'],
         ability: {
             id: 'meteor',
@@ -71,6 +73,7 @@ export const CLASS_DEFINITIONS = {
         description: 'Críticos devastadores',
         hpPerLevel: 8,
         primaryStat: 'dex',
+        savingThrows: ['dex', 'int'],
         weapons: ['bow', 'crossbow'],
         ability: {
             id: 'arrow_rain',
@@ -98,6 +101,7 @@ export const CLASS_DEFINITIONS = {
         description: 'Suporte e cura',
         hpPerLevel: 8,
         primaryStat: 'wis',
+        savingThrows: ['wis', 'cha'],
         weapons: ['mace', 'shield'],
         ability: {
             id: 'mass_heal',

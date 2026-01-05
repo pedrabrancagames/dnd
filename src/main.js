@@ -11,7 +11,7 @@ import { signIn, signUp, getSession, getPlayer, createPlayer, onAuthStateChange 
 import { getCurrentPosition, startWatching, onPositionChange } from './lib/gps.js';
 import { getCellId, getNearbyCells, getCellBiome, getCellCenter } from './lib/cells.js';
 import { getMonstersByBiome, getMonstersByCR, selectRandomMonster, createMonsterInstance } from './data/monsters.js';
-import { gameState, setPlayer, setScreen, startCombat, endCombat, getClassIcon, updateDerivedStats } from './game/state.js';
+import { gameState, setPlayer, setScreen, startCombat, endCombat, getClassIcon, updateDerivedStats, performRest } from './game/state.js';
 import { playerAttack, monsterAttack, isMonsterDefeated, isPlayerDefeated, castDamageSpell, useHealingPotion, attemptFlee } from './game/combat.js';
 import { generateLoot, getRarityColor, getItemById } from './data/items.js';
 import { startARSession, endARSession, showMonsterDamageEffect, showMonsterDeathEffect, isARSessionActive } from './ar/ar-manager.js';
@@ -364,6 +364,19 @@ function setupUIListeners() {
                 updateCharacterScreen();
             }
         });
+    });
+
+    // Botões de descanso
+    document.getElementById('rest-short-btn')?.addEventListener('click', () => {
+        const result = performRest('short');
+        alert(result.message);
+        updateCharacterScreen();
+    });
+
+    document.getElementById('rest-long-btn')?.addEventListener('click', () => {
+        const result = performRest('long');
+        alert(result.message);
+        updateCharacterScreen();
     });
 }
 

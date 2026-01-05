@@ -798,7 +798,7 @@ function handleItem() {
 /**
  * Handler de fuga
  */
-function handleFlee() {
+async function handleFlee() {
     const result = attemptFlee();
 
     showARMessage(result.message);

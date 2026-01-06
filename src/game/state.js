@@ -253,6 +253,20 @@ export function performRest(type) {
     if (!gameState.player) return { success: false, message: 'Jogador não encontrado' };
     if (gameState.inCombat) return { success: false, message: 'Não pode descansar em combate!' };
 
+    const player = gameState.player;
+
+    // Verifica se o jogador precisa de descanso
+    const hpMissing = player.maxHp - player.currentHp;
+    const manaMissing = player.maxMana - player.currentMana;
+
+    if (hpMissing === 0 && manaMissing === 0) {
+        return {
+            success: false,
+            message: 'Você já está totalmente descansado! HP e Mana estão no máximo.'
+        };
+    }
+
+    // Verifica cooldown
     const now = Date.now();
     const lastRest = gameState.lastRestTime[type] || 0;
     const cooldown = gameState.restCooldowns[type];
@@ -263,7 +277,6 @@ export function performRest(type) {
         return { success: false, message: `Aguarde ${min} min para descansar novamente.` };
     }
 
-    const player = gameState.player;
     let recoveredHp = 0;
     let recoveredMana = 0;
 
@@ -274,8 +287,7 @@ export function performRest(type) {
         player.currentHp = Math.min(player.maxHp, player.currentHp + healAmount);
         recoveredHp = player.currentHp - oldHp;
 
-        // Short rest recupera um pouco de mana (Warlock style? Ou geral?)
-        // Vamos dar 10% mana
+        // Short rest recupera 10% de mana
         const manaAmount = Math.floor(player.maxMana * 0.1);
         const oldMana = player.currentMana;
         player.currentMana = Math.min(player.maxMana, player.currentMana + manaAmount);
@@ -299,8 +311,21 @@ export function performRest(type) {
 
     // Salvar no DB? Idealmente sim, o loop principal deve persistir o estado periodicamente.
 
+    let message = `Descanso ${type === 'short' ? 'Curto' : 'Longo'} concluído!`;
+
+    if (recoveredHp > 0) {
+        message += ` +${recoveredHp} HP`;
+    }
+    if (recoveredMana > 0) {
+        message += ` +${recoveredMana} Mana`;
+    }
+    if (recoveredHp === 0 && recoveredMana === 0) {
+        message += ' Você estava quase totalmente recuperado.';
+    }
+
+
     return {
         success: true,
-        message: `Descanso ${type === 'short' ? 'Curto' : 'Longo'} concluído. +${recoveredHp} HP, +${recoveredMana} Mana.`
+        message
     };
 }

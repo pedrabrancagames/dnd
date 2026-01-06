@@ -34,7 +34,9 @@ export default defineConfig({
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,glb,gltf,mp3,ogg,webp}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,mp3,ogg,webp}'],
+        // Exclui GLB do precache (muito grandes) - serão cacheados via runtime
+        globIgnores: ['**/*.glb', '**/*.gltf'],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
@@ -55,6 +57,21 @@ export default defineConfig({
               expiration: {
                 maxEntries: 200,
                 maxAgeSeconds: 60 * 60 * 24 * 7 // 7 dias
+              }
+            }
+          },
+          {
+            // Cache GLB models on demand
+            urlPattern: /\.glb$/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: '3d-models-cache',
+              expiration: {
+                maxEntries: 30,
+                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 dias
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
               }
             }
           }

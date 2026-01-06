@@ -3,7 +3,7 @@
  * Implementa regras de D&D simplificadas para AR
  */
 
-import { rollAttack, rollDamage, rollSave, getModifier } from '../lib/dice.js';
+import { rollAttack, rollDamage, rollSave, getModifier, rollWithAdvantage, rollWithDisadvantage } from '../lib/dice.js';
 import { gameState, recordAction, isOnCooldown, damagePlayer } from './state.js';
 import { getEquippedWeaponDamage } from './inventory.js';
 import { getClassDefinition } from './classes.js';
@@ -24,6 +24,7 @@ import { getClassDefinition } from './classes.js';
  * @returns {AttackResult|null}
  */
 export function playerAttack() {
+    resetCombatFlags(); // Limpa Dodge/Disengage ao atacar
     if (!gameState.player || !gameState.currentMonster) {
         return null;
     }
@@ -168,7 +169,19 @@ export function monsterAttack() {
     // Melhor: Criaremos um valor arbitrário baseado no CR se não existir
     const attackBonus = Math.floor(monster.cr * 2) + 3;
 
-    const attackResult = rollAttack(attackBonus, player.ac);
+    // Verifica se jogador está esquivando (Dodge)
+    let attackResult;
+    if (player.isDodging) {
+        const r1 = rollAttack(attackBonus, player.ac);
+        const r2 = rollAttack(attackBonus, player.ac);
+        // Desvantagem: pega o pior resultado
+        if (r1.total <= r2.total) attackResult = r1;
+        else attackResult = r2;
+
+        // Se tinha vantagem por algum motivo, anularia, mas vamos simplificar
+    } else {
+        attackResult = rollAttack(attackBonus, player.ac);
+    }
 
     let damage = 0;
     let message = '';
@@ -186,11 +199,18 @@ export function monsterAttack() {
             message = `${monster.name} te acerta! ${damage} de dano`;
         }
 
+        if (player.isDodging) {
+            message += ' (Dodge falhou)';
+        }
+
         if (died) {
             message += ' Você foi derrotado!';
         }
     } else {
         message = `${monster.name} erra o ataque!`;
+        if (player.isDodging) {
+            message += ' (Esquivou!)';
+        }
     }
 
     return {
@@ -203,53 +223,50 @@ export function monsterAttack() {
     };
 }
 
+import { SPELLS } from '../data/spells.js';
+
 /**
- * Definição de Magias
+ * Reseta flags temporárias de combate do jogador
  */
-const SPELLS = {
-    fireBolt: {
-        id: 'fireBolt',
-        name: 'Fire Bolt',
-        type: 'attack', // Attack Roll
-        damage: '1d10',
-        damageType: 'fire',
-        manaCost: 0, // Cantrip
-        scaleWithLevel: true // 2d10 at lvl 5, etc - TODO
-    },
-    magicMissile: {
-        id: 'magicMissile',
-        name: 'Magic Missile',
-        type: 'auto', // Auto hit
-        damage: '3d4+3',
-        damageType: 'force',
-        manaCost: 10
-    },
-    iceShard: {
-        id: 'iceShard',
-        name: 'Ice Shard',
-        type: 'attack',
-        damage: '1d8',
-        damageType: 'cold',
-        manaCost: 5
-    },
-    fireball: {
-        id: 'fireball',
-        name: 'Fireball',
-        type: 'save',
-        saveAttr: 'dex', // Dexterity Save
-        damage: '8d6',
-        damageType: 'fire',
-        manaCost: 30,
-        halfOnSave: true
-    },
-    cureWounds: {
-        id: 'cureWounds',
-        name: 'Cure Wounds',
-        type: 'heal',
-        heal: '1d8',
-        manaCost: 10
+function resetCombatFlags() {
+    if (gameState.player) {
+        gameState.player.isDodging = false;
+        gameState.player.isDisengaging = false;
     }
-};
+}
+
+/**
+ * Realiza a ação de Esquivar (Dodge)
+ * @returns {Object}
+ */
+export function playerDodge() {
+    if (isOnCooldown()) return { success: false, message: 'Aguarde o cooldown' };
+
+    resetCombatFlags();
+    if (gameState.player) {
+        gameState.player.isDodging = true;
+    }
+
+    recordAction();
+    return { success: true, message: 'Você assume postura defensiva (Dodge)!' };
+}
+
+/**
+ * Realiza a ação de Desengajar (Disengage)
+ * @returns {Object}
+ */
+export function playerDisengage() {
+    if (isOnCooldown()) return { success: false, message: 'Aguarde o cooldown' };
+
+    resetCombatFlags();
+    if (gameState.player) {
+        gameState.player.isDisengaging = true;
+    }
+
+    recordAction();
+    return { success: true, message: 'Você prepara sua fuga (Disengage)!' };
+}
+// SPELLS removido daqui, agora importado de data/spells.js
 
 /**
  * Usa uma magia
@@ -257,6 +274,7 @@ const SPELLS = {
  * @returns {Object|null}
  */
 export function castSpell(spellId) {
+    resetCombatFlags();
     if (!gameState.player || !gameState.currentMonster) {
         return null; // Alguns spells podem ser usados fora de combate, mas por enquanto exige target
     }
@@ -267,15 +285,23 @@ export function castSpell(spellId) {
 
     const player = gameState.player;
     const monster = gameState.currentMonster;
+
+    // Procura no objeto importado SPELLS
     const spell = SPELLS[spellId];
 
     if (!spell) return { success: false, message: 'Magia desconhecida' };
 
-    if (player.currentMana < spell.manaCost) {
+    // Validar classe (opcional, mas bom pra checar)
+    if (spell.class && spell.class !== player.class && spellId !== 'magicMissile') { // Exceções temporárias se houver
+        // Por enquanto permitir cross-class para teste ou não? Melhor bloquear ou avisar.
+        // Como o UI só vai mostrar as da classe, aqui é validação extra.
+    }
+
+    if (player.currentMana < spell.cost) {
         return { success: false, message: 'Mana insuficiente!' };
     }
 
-    player.currentMana -= spell.manaCost;
+    player.currentMana -= spell.cost;
 
     // Spellcasting mod (INT for Mage, WIS for Cleric)
     let spellMod = player.intMod;
@@ -288,56 +314,70 @@ export function castSpell(spellId) {
         const attackResult = rollAttack(spellMod + player.proficiencyBonus, monster.ac);
 
         if (attackResult.hit) {
+            // Se tiver efeito especial como guidingBolt
+            if (spell.effect === 'advantage_next') {
+                // TODO: Implementar flag no monstro 'grantAdvantage: true'
+            }
+
             const dmgRoll = rollDamage(`${spell.damage}+${spellMod}`, attackResult.isCritical);
-            const final = calculateDamage(dmgRoll.total, spell.damageType, monster);
+
+            // Tipo de dano default
+            const damageType = spell.id === 'fireBolt' ? 'fire' : (spell.id === 'guidingBolt' ? 'radiant' : 'force');
+            const final = calculateDamage(dmgRoll.total, damageType, monster);
 
             monster.currentHp = Math.max(0, monster.currentHp - final.amount);
 
-            result.message = `${spell.name}: ${final.amount} dano (${final.typeDisplay})`;
+            result.message = `${spell.name}: ${final.amount} dano`;
             if (attackResult.isCritical) result.message = `CRÍTICO! ${result.message}`;
         } else {
             result.message = `${spell.name} errou!`;
         }
 
-    } else if (spell.type === 'auto') {
-        // Auto hit (Magic Missile)
-        const dmgRoll = rollDamage(spell.damage); // Usually no mod added to MM damage
-        const final = calculateDamage(dmgRoll.total, spell.damageType, monster);
+    } else if (spell.type === 'damage' && spell.autoHit) {
+        // Magic Missile
+        const dmgRoll = rollDamage(spell.damage);
+        const final = calculateDamage(dmgRoll.total, 'force', monster);
 
         monster.currentHp = Math.max(0, monster.currentHp - final.amount);
         result.message = `${spell.name}: ${final.amount} dano (Infalível)`;
 
-    } else if (spell.type === 'save') {
+    } else if (spell.type === 'save_dex' || spell.type === 'save') {
         // Saving Throw
-        // DC = 8 + prof + mod
         const dc = 8 + player.proficiencyBonus + spellMod;
-
-        // Monster rolls save
-        // Monster save mod?? Assuming flat Ability Mod from (10 + CR) approximation or specific
-        // Simplification: Monster Save Mod = floor(CR/2)
-        const monsterSaveMod = Math.floor(monster.cr / 2); // Very rough, ideally monster has stats
-
+        const monsterSaveMod = Math.floor(monster.cr / 2); // Simplificação
         const saveResult = rollSave(monsterSaveMod, dc);
 
         let dmgRoll = rollDamage(spell.damage);
         let finalDamage = dmgRoll.total;
 
         if (saveResult.success) {
+            // Cantrips geralmente 0 on save, leveled spells half. Sacred Flame is 0.
             if (spell.halfOnSave) finalDamage = Math.floor(finalDamage / 2);
-            else finalDamage = 0;
+            else finalDamage = 0; // Sacred Flame
+
             result.message = `${monster.name} resistiu ao ${spell.name}! (${finalDamage} dano)`;
         } else {
             result.message = `${monster.name} falhou contra ${spell.name}! (${finalDamage} dano)`;
         }
 
-        const final = calculateDamage(finalDamage, spell.damageType, monster);
-        monster.currentHp = Math.max(0, monster.currentHp - final.amount);
+        if (finalDamage > 0) {
+            const damageType = spell.id === 'sacredFlame' ? 'radiant' : 'fire';
+            const final = calculateDamage(finalDamage, damageType, monster);
+            monster.currentHp = Math.max(0, monster.currentHp - final.amount);
+        }
 
     } else if (spell.type === 'heal') {
         const healRoll = rollDamage(`${spell.heal}+${spellMod}`);
         const oldHp = player.currentHp;
         player.currentHp = Math.min(player.maxHp, player.currentHp + healRoll.total);
         result.message = `Curou ${player.currentHp - oldHp} HP`;
+
+    } else if (spell.type === 'buff') {
+        if (spell.id === 'shield') {
+            player.tempAcBonus = (player.tempAcBonus || 0) + spell.value;
+            // TODO: Remover no início do prox turno. Complexidade extra de gestão de turno.
+            result.message = `Shield ativo! +5 AC`;
+        }
     }
 
     recordAction();
@@ -405,6 +445,11 @@ export function isPlayerDefeated() {
 export function attemptFlee() {
     if (!gameState.player || !gameState.currentMonster) {
         return { success: false, message: 'Erro' };
+    }
+
+    // Se usar Disengage, sucesso automático
+    if (gameState.player.isDisengaging) {
+        return { success: true, message: 'Você fugiu com segurança (Disengage)!' };
     }
 
     // 50% de chance de fugir, +5% por ponto de DEX mod

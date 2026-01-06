@@ -156,3 +156,33 @@ export function getModifier(score) {
 export function rollInitiative(dexMod) {
     return roll('1d20').total + dexMod;
 }
+
+/**
+ * Rola 2d20 e pega o maior valor (Vantagem)
+ * @returns {{total: number, rolls: number[], natural: number, ignored: number}}
+ */
+export function rollWithAdvantage() {
+    const r1 = roll('1d20');
+    const r2 = roll('1d20');
+
+    if (r1.total >= r2.total) {
+        return { ...r1, ignored: r2.total };
+    } else {
+        return { ...r2, ignored: r1.total };
+    }
+}
+
+/**
+ * Rola 2d20 e pega o menor valor (Desvantagem)
+ * @returns {{total: number, rolls: number[], natural: number, ignored: number}}
+ */
+export function rollWithDisadvantage() {
+    const r1 = roll('1d20');
+    const r2 = roll('1d20');
+
+    if (r1.total <= r2.total) {
+        return { ...r1, ignored: r2.total };
+    } else {
+        return { ...r2, ignored: r1.total };
+    }
+}

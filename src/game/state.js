@@ -26,7 +26,9 @@ export const gameState = {
     lastActionTime: 0,
     actionCooldown: 2000, // 2 segundos
     lastRestTime: { short: 0, long: 0 },
-    restCooldowns: { short: 5 * 60 * 1000, long: 30 * 60 * 1000 } // 5min short, 30min long
+    restCooldowns: { short: 5 * 60 * 1000, long: 30 * 60 * 1000 }, // 5min short, 30min long
+    skills: {},
+    hitDice: { current: 0, max: 0, die: 8 }
 };
 
 /**
@@ -68,6 +70,24 @@ export function updateDerivedStats() {
     if (p.currentHp === undefined || p.currentHp === null) {
         p.currentHp = p.maxHp;
     }
+
+    // Hit Dice
+    gameState.hitDice.die = hpDie;
+    gameState.hitDice.max = p.level;
+    if (gameState.hitDice.current === undefined) {
+        gameState.hitDice.current = gameState.hitDice.max;
+    }
+
+    // Perícias (Skills)
+    // Skill Mod = Ability Mod + (Proficiency se treinado)
+    p.skills = {
+        athletics: p.strMod + (p.class === 'warrior' ? p.proficiencyBonus : 0),
+        stealth: p.dexMod + (p.class === 'archer' || p.class === 'mage' ? p.proficiencyBonus : 0),
+        perception: p.wisMod + (p.class === 'cleric' || p.class === 'archer' ? p.proficiencyBonus : 0),
+        insight: p.wisMod + (p.class === 'cleric' ? p.proficiencyBonus : 0),
+        persuasion: p.chaMod + (p.class === 'warrior' ? p.proficiencyBonus : 0),
+        arcana: p.intMod + (p.class === 'mage' ? p.proficiencyBonus : 0)
+    };
 
     // Mana baseada em INT
     p.maxMana = (p.int * 2) + (p.level * 3);
@@ -279,16 +299,30 @@ export function performRest(type) {
 
     let recoveredHp = 0;
     let recoveredMana = 0;
+    let hitDiceSpent = 0;
 
     if (type === 'short') {
-        // Recupera 50% do HP máximo
-        const healAmount = Math.floor(player.maxHp * 0.5);
+        // Short Rest: Gasta Hit Dice para curar
+        if (gameState.hitDice.current <= 0) {
+            return { success: false, message: 'Você não tem Hit Dice restantes para descansar.' };
+        }
+
+        // Rola o Hit Die do jogador + CON mod
+        const dieSide = gameState.hitDice.die;
+        const roll = Math.floor(Math.random() * dieSide) + 1;
+        const healAmount = Math.max(1, roll + gameState.player.conMod);
+
         const oldHp = player.currentHp;
         player.currentHp = Math.min(player.maxHp, player.currentHp + healAmount);
         recoveredHp = player.currentHp - oldHp;
 
-        // Short rest recupera 10% de mana
-        const manaAmount = Math.floor(player.maxMana * 0.1);
+        // Gasta 1 Hit Die
+        gameState.hitDice.current--;
+        hitDiceSpent = 1;
+
+        // Recupera um pouco de mana também (regra da casa ou feature extra)
+        // Vamos manter a recuperação de mana do código original mas reduzida
+        const manaAmount = Math.max(1, Math.floor(player.maxMana * 0.1));
         const oldMana = player.currentMana;
         player.currentMana = Math.min(player.maxMana, player.currentMana + manaAmount);
         recoveredMana = player.currentMana - oldMana;
@@ -305,8 +339,11 @@ export function performRest(type) {
         player.currentMana = player.maxMana;
         recoveredMana = player.currentMana - oldMana;
 
+        // Recupera metade dos Hit Dice (mínimo 1)
+        const recoveredHD = Math.max(1, Math.floor(gameState.hitDice.max / 2));
+        gameState.hitDice.current = Math.min(gameState.hitDice.max, gameState.hitDice.current + recoveredHD);
+
         gameState.lastRestTime.long = now;
-        // Long rest também reseta short rest cooldown? Geralmente sim, mas vamos manter separado por simplicidade
     }
 
     // Salvar no DB? Idealmente sim, o loop principal deve persistir o estado periodicamente.

@@ -12,7 +12,7 @@ import { getCurrentPosition, startWatching, onPositionChange } from './lib/gps.j
 import { getCellId, getNearbyCells, getCellBiome, getCellCenter } from './lib/cells.js';
 import { getMonstersByBiome, getMonstersByCR, selectRandomMonster, createMonsterInstance } from './data/monsters.js';
 import { gameState, setPlayer, setScreen, startCombat, endCombat, getClassIcon, updateDerivedStats, performRest } from './game/state.js';
-import { playerAttack, monsterAttack, isMonsterDefeated, isPlayerDefeated, castDamageSpell, useHealingPotion, attemptFlee } from './game/combat.js';
+import { playerAttack, monsterAttack, isMonsterDefeated, isPlayerDefeated, castDamageSpell, useHealingPotion, attemptFlee, playerDodge } from './game/combat.js';
 import { generateLoot, getRarityColor, getItemById } from './data/items.js';
 import { startARSession, endARSession, showMonsterDamageEffect, showMonsterDeathEffect, isARSessionActive } from './ar/ar-manager.js';
 import { grantXP, getXPProgress, getXPForLevel, getTotalXPForLevel, spendAttributePoint } from './game/progression.js';
@@ -314,7 +314,9 @@ function setupUIListeners() {
     document.getElementById('attack-btn')?.addEventListener('click', handleAttack);
     document.getElementById('spell-btn')?.addEventListener('click', handleSpell);
     document.getElementById('item-btn')?.addEventListener('click', handleItem);
+    document.getElementById('item-btn')?.addEventListener('click', handleItem);
     document.getElementById('flee-btn')?.addEventListener('click', handleFlee);
+    document.getElementById('dodge-btn')?.addEventListener('click', handleDodge);
 
     // Botão continuar (vitória)
     document.getElementById('continue-btn')?.addEventListener('click', () => {
@@ -795,31 +797,49 @@ function processAttackResult(result) {
  * Handler de magia
  */
 function handleSpell() {
-    const result = castDamageSpell('fireBolt');
+    if (!gameState.player) return;
+
+    // Seleciona cantrip baseado na classe
+    let spellId = 'fireBolt'; // Default (Mage)
+    if (gameState.player.class === 'cleric') spellId = 'sacredFlame';
+
+    const result = castDamageSpell(spellId);
     if (!result) return;
 
+    if (!result.success) {
+        showARMessage(result.message || 'Falha ao lançar');
+        return;
+    }
+
+    showARMessage(result.message);
+
+    // Verifica vitória ou passa turno
+    if (isMonsterDefeated()) {
+        showMonsterDeathEffect();
+        setTimeout(handleVictory, 1200);
+    } else {
+        executeMonsterTurn();
+    }
+}
+
+/**
+ * Handler de Dodge
+ */
+function handleDodge() {
+    console.log('🛡️ handleDodge chamado');
+    if (isAttacking) return;
+
+    const result = playerDodge();
     if (!result.success) {
         showARMessage(result.message);
         return;
     }
 
-    if (result.hit) {
-        showDamagePopup(result.damage, result.spellType, false);
-        showMonsterDamageEffect(result.damage, false);
-    } else {
-        showDamagePopup(0, 'miss');
-    }
-
-    updateARHUD();
-
-    if (isMonsterDefeated()) {
-        showMonsterDeathEffect();
-        setTimeout(handleVictory, 1200);
-    } else {
-        // Turno do monstro
-        executeMonsterTurn();
-    }
+    showARMessage(result.message);
+    executeMonsterTurn();
 }
+
+
 
 /**
  * Handler de item

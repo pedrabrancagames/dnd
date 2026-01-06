@@ -156,10 +156,11 @@ export async function loadMonsterModel(modelPath = '/assets/models/monster.glb')
 /**
  * Inicia a sessão AR
  * @param {Object} options
+ * @param {string} options.monsterId - ID do template do monstro (ex: 'goblin')
  * @param {Function} options.onPlaced - Callback quando monstro é posicionado
  * @param {Function} options.onEnd - Callback quando AR termina
  */
-export async function startARSession({ onPlaced, onEnd } = {}) {
+export async function startARSession({ monsterId, onPlaced, onEnd } = {}) {
     if (!await isARSupported()) {
         console.error('AR não suportado neste dispositivo');
         return false;
@@ -204,8 +205,11 @@ export async function startARSession({ onPlaced, onEnd } = {}) {
         isARActive = true;
         renderer.setAnimationLoop(renderFrame);
 
-        // Carrega o modelo do monstro
-        await loadMonsterModel();
+        // Carrega o modelo específico do monstro
+        const modelPath = monsterId
+            ? `/assets/models/${monsterId}.glb`
+            : '/assets/models/monster.glb';
+        await loadMonsterModel(modelPath);
 
         console.log('✅ Sessão AR iniciada com sucesso');
         return true;

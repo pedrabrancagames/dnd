@@ -587,6 +587,7 @@ async function startARCombat() {
 
     // Tenta iniciar sessão AR (opcional, o combate funciona sem ela)
     const arStarted = await startARSession({
+        monsterId: gameState.currentMonster?.templateId,
         onPlaced: () => {
             console.log('✅ Monstro posicionado em AR');
         },

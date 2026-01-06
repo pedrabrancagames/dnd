@@ -147,6 +147,7 @@
       <div class="map-actions">
         <button class="map-btn" id="inventory-btn" title="Inventário">🎒</button>
         <button class="map-btn" id="character-btn" title="Personagem">📊</button>
+        <button class="map-btn" id="explore-btn" title="Explorar">🔍</button>
       </div>
 
       <div id="monster-panel" class="panel hidden">
@@ -273,6 +274,21 @@
             <button id="use-item-btn" class="btn-secondary">Usar</button>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Exploration Event Screen -->
+    <div id="event-screen" class="screen overlay">
+      <div class="event-modal">
+        <div class="event-icon" id="event-icon">📦</div>
+        <h2 id="event-title">Baú Antigo</h2>
+        <p id="event-description">Você encontrou algo...</p>
+
+        <div class="event-options" id="event-options">
+          <!-- Populated via JS -->
+        </div>
+
+        <button id="close-event-btn" class="btn-secondary hidden" style="display:none;">Fechar</button>
       </div>
     </div>
 

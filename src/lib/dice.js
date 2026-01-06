@@ -186,3 +186,21 @@ export function rollWithDisadvantage() {
         return { ...r2, ignored: r1.total };
     }
 }
+
+/**
+ * Rola um teste de perícia
+ * @param {number} skillMod - Modificador da perícia
+ * @param {number} dc - Dificuldade (Difficulty Class)
+ * @returns {{success: boolean, total: number, natural: number, difference: number}}
+ */
+export function rollSkillCheck(skillMod, dc) {
+    const result = roll('1d20');
+    const total = result.total + skillMod;
+
+    return {
+        success: total >= dc,
+        total,
+        natural: result.natural,
+        difference: total - dc
+    };
+}

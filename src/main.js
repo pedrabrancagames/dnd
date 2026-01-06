@@ -13,6 +13,7 @@ import { getCellId, getNearbyCells, getCellBiome, getCellCenter } from './lib/ce
 import { getMonstersByBiome, getMonstersByCR, selectRandomMonster, createMonsterInstance } from './data/monsters.js';
 import { gameState, setPlayer, setScreen, startCombat, endCombat, getClassIcon, updateDerivedStats, performRest } from './game/state.js';
 import { playerAttack, monsterAttack, isMonsterDefeated, isPlayerDefeated, castDamageSpell, useHealingPotion, attemptFlee, playerDodge } from './game/combat.js';
+import { generateExplorationEvent, resolveEvent } from './game/exploration.js';
 import { generateLoot, getRarityColor, getItemById } from './data/items.js';
 import { startARSession, endARSession, showMonsterDamageEffect, showMonsterDeathEffect, isARSessionActive } from './ar/ar-manager.js';
 import { grantXP, getXPProgress, getXPForLevel, getTotalXPForLevel, spendAttributePoint } from './game/progression.js';
@@ -315,8 +316,15 @@ function setupUIListeners() {
     document.getElementById('spell-btn')?.addEventListener('click', handleSpell);
     document.getElementById('item-btn')?.addEventListener('click', handleItem);
     document.getElementById('item-btn')?.addEventListener('click', handleItem);
+    document.getElementById('item-btn')?.addEventListener('click', handleItem);
     document.getElementById('flee-btn')?.addEventListener('click', handleFlee);
     document.getElementById('dodge-btn')?.addEventListener('click', handleDodge);
+
+    // Exploração
+    document.getElementById('explore-btn')?.addEventListener('click', handleExplore);
+    document.getElementById('close-event-btn')?.addEventListener('click', () => {
+        document.getElementById('event-screen').classList.remove('active');
+    });
 
     // Botão continuar (vitória)
     document.getElementById('continue-btn')?.addEventListener('click', () => {
@@ -877,6 +885,7 @@ async function handleFlee() {
             console.error("Erro ao encerrar AR na fuga:", e);
         }
 
+        setScreen('map-screen');
         endCombat();
 
         // Volta para o mapa usando a função correta

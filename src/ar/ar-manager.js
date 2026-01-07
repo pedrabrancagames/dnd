@@ -498,9 +498,9 @@ function renderFrame(time, frame) {
     // Atualiza a animação do monstro (pulsação para indicar que está vivo)
     const monster = scene.getObjectByName('monster');
     if (monster) {
-        // Pequena animação de "respiração"
-        const breathe = Math.sin(time * 0.002) * 0.02;
-        monster.scale.setScalar(0.5 + breathe);
+        // Pequena animação de "respiração" - ESCALA BASE 10.0 (não 0.5!)
+        const breathe = Math.sin(time * 0.002) * 0.2; // Efeito sutil
+        monster.scale.setScalar(10.0 + breathe);
 
         // Faz o monstro olhar para a câmera
         const cameraPosition = new THREE.Vector3();

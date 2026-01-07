@@ -47,58 +47,85 @@ function goToMap() {
 async function init() {
     console.log('🎮 Iniciando D&D AR Adventure...');
 
-    // IMPORTANTE: Setup de listeners ANTES de qualquer verificação
-    // para garantir que botões funcionem mesmo em telas de erro
-    setupUIListeners();
-    setupAuthListeners();
+    try {
+        // IMPORTANTE: Setup de listeners ANTES de qualquer verificação
+        // para garantir que botões funcionem mesmo em telas de erro
+        setupUIListeners();
+        setupAuthListeners();
 
-    updateLoadingStatus('Verificando compatibilidade...');
+        updateLoadingStatus('Verificando compatibilidade...');
+        console.log('⏳ Iniciando verificação de compatibilidade...');
 
-    // 1. Verificação de compatibilidade
-    const compatibility = await checkCompatibility();
-
-    if (!compatibility.passed) {
-        console.warn('❌ Dispositivo incompatível');
-        renderIncompatibleScreen(compatibility.results);
-        setScreen('incompatible');
-        return;
-    }
-
-    console.log('✅ Dispositivo compatível');
-    updateLoadingStatus('Verificando sessão...');
-
-    // 2. Verificar sessão existente
-    const { session, user } = await getSession();
-
-    if (session && user) {
-        console.log('✅ Sessão encontrada:', user.email);
-        gameState.user = user;
-
-        // Busca dados do jogador
-        const { player } = await getPlayer(user.id);
-
-        if (player) {
-            setPlayer(player);
-            await initMap();
-        } else {
-            setScreen('character');
+        // 1. Verificação de compatibilidade (com timeout global de 10s)
+        let compatibility;
+        try {
+            compatibility = await Promise.race([
+                checkCompatibility(),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 10000))
+            ]);
+        } catch (e) {
+            console.error('❌ Timeout ou erro na verificação de compatibilidade:', e);
+            // Se der timeout, assume que é compatível e continua
+            compatibility = { passed: true, results: [] };
         }
-    } else {
-        console.log('ℹ️ Sem sessão ativa');
-        setScreen('login');
-    }
 
-    // 3. Configurações finais
-    setupCompass();
+        console.log('✅ Verificação concluída:', compatibility);
 
-    // 4. Observar mudanças de autenticação
-    onAuthStateChange((event, session) => {
-        if (event === 'SIGNED_OUT') {
-            gameState.user = null;
-            gameState.player = null;
+        if (!compatibility.passed) {
+            console.warn('❌ Dispositivo incompatível');
+            renderIncompatibleScreen(compatibility.results);
+            setScreen('incompatible');
+            return;
+        }
+
+        console.log('✅ Dispositivo compatível');
+        updateLoadingStatus('Verificando sessão...');
+
+        // 2. Verificar sessão existente
+        console.log('⏳ Verificando sessão...');
+        const { session, user } = await getSession();
+        console.log('✅ Sessão verificada:', session ? 'ativa' : 'nenhuma');
+
+        if (session && user) {
+            console.log('✅ Sessão encontrada:', user.email);
+            gameState.user = user;
+
+            // Busca dados do jogador
+            console.log('⏳ Buscando dados do jogador...');
+            const { player } = await getPlayer(user.id);
+            console.log('✅ Jogador:', player ? player.name : 'não existe');
+
+            if (player) {
+                setPlayer(player);
+                await initMap();
+            } else {
+                setScreen('character');
+            }
+        } else {
+            console.log('ℹ️ Sem sessão ativa');
             setScreen('login');
         }
-    });
+
+        // 3. Configurações finais
+        setupCompass();
+
+        // 4. Observar mudanças de autenticação
+        onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_OUT') {
+                gameState.user = null;
+                gameState.player = null;
+                setScreen('login');
+            }
+        });
+
+        console.log('✅ Inicialização completa!');
+
+    } catch (error) {
+        console.error('❌ Erro fatal na inicialização:', error);
+        updateLoadingStatus('Erro ao iniciar. Tente recarregar.');
+        // Tenta ir para login mesmo assim
+        setTimeout(() => setScreen('login'), 2000);
+    }
 }
 
 /**

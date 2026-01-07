@@ -4,6 +4,7 @@
 
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 
 let renderer = null;
 let scene = null;
@@ -108,6 +109,11 @@ export async function loadMonsterModel(modelPath = '/assets/models/monster.glb')
     return new Promise((resolve, reject) => {
         const loader = new GLTFLoader();
 
+        // Configura compressão Draco
+        const dracoLoader = new DRACOLoader();
+        dracoLoader.setDecoderPath('/assets/draco/');
+        loader.setDRACOLoader(dracoLoader);
+
         loader.load(
             modelPath,
             (gltf) => {
@@ -180,6 +186,11 @@ export async function loadWeaponModel(modelPath) {
 
     return new Promise((resolve, reject) => {
         const loader = new GLTFLoader();
+
+        // Configura compressão Draco
+        const dracoLoader = new DRACOLoader();
+        dracoLoader.setDecoderPath('/assets/draco/');
+        loader.setDRACOLoader(dracoLoader);
 
         loader.load(
             modelPath,

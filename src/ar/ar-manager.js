@@ -1,12 +1,11 @@
 /**
  * AR Manager - Gerencia sessão WebXR e renderização Three.js
- * VERSÃO: 2026-01-07-v3 (escala 10x container)
  */
-console.log('🎮 AR Manager carregado - VERSÃO 2026-01-07-v3 (escala 10x)');
 
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
+import { playMonsterGrowl } from '../lib/audio-manager.js';
 
 let renderer = null;
 let scene = null;
@@ -439,6 +438,9 @@ function placeMonster(hitMatrix) {
 
     monsterModel.updateMatrix();
     scene.add(monsterModel);
+
+    // Toca som do monstro aparecendo
+    playMonsterGrowl();
 
     // Garante que o monstro olhe para a câmera ao aparecer
     const cameraPos = new THREE.Vector3();

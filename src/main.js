@@ -22,6 +22,17 @@ import { getClassDefinition, useClassAbility, getAbilityCooldownRemaining } from
 import { initInventory, addItemToInventory, equipItem, unequipItem, useItem, getInventoryWithDetails, getEquippedItem, recalculateEquipmentStats } from './game/inventory.js';
 import { rollD20Animation } from './ar/dice-animation.js';
 import { recordMonsterKill, getDefeatedMonsters, updatePlayer } from './lib/supabase.js';
+import {
+    preloadSounds,
+    playAttackSound,
+    playMonsterGrowl,
+    playDodgeSound,
+    playSuccessSound,
+    playFailSound,
+    playChestOpenSound,
+    playLevelUpSound,
+    playClickSound
+} from './lib/audio-manager.js';
 
 // Leaflet map instance
 let map = null;
@@ -53,6 +64,9 @@ async function init() {
         // para garantir que botões funcionem mesmo em telas de erro
         setupUIListeners();
         setupAuthListeners();
+
+        // Pré-carrega sons
+        preloadSounds();
 
         updateLoadingStatus('Verificando compatibilidade...');
         console.log('⏳ Iniciando verificação de compatibilidade...');
@@ -820,6 +834,7 @@ function processAttackResult(result) {
         showDamagePopup(result.damage, result.isCritical ? 'critical' : 'fire', result.isCritical);
         showMonsterDamageEffect(result.damage, result.isCritical);
         animateWeaponAttack(); // Anima a arma 3D
+        playAttackSound(result.damageType || 'slashing'); // Som de ataque
         if (result.isCritical) {
             showARMessage('CRÍTICO! Dano dobrado!');
         } else {
@@ -886,6 +901,7 @@ function handleDodge() {
         return;
     }
 
+    playDodgeSound(); // Som de esquiva
     showARMessage(result.message);
     executeMonsterTurn();
 }

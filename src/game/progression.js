@@ -4,6 +4,7 @@
 
 import { gameState } from './state.js';
 import { updatePlayer } from '../lib/supabase.js';
+import { playLevelUpSound } from '../lib/audio-manager.js';
 
 /**
  * Calcula XP necessário para um nível específico
@@ -109,6 +110,9 @@ export async function grantXP(xpAmount) {
 
         // Atualiza stats derivados
         updateStatsForLevel(player);
+
+        // Toca som de level up
+        playLevelUpSound();
     }
 
     // Calcula novos pontos de atributo

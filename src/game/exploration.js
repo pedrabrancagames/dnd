@@ -6,6 +6,7 @@ import { EXPLORATION_EVENTS } from '../data/events.js';
 import { gameState, addXP } from './state.js';
 import { rollSkillCheck } from '../lib/dice.js';
 import { addItemToInventory } from './inventory.js';
+import { playSuccessSound, playFailSound, playChestOpenSound } from '../lib/audio-manager.js';
 
 /**
  * Gera um evento aleatório baseado na célula
@@ -62,6 +63,7 @@ export async function resolveEvent(event, selectedOptionIndex) {
         const success = event.success;
 
         if (success.type === 'loot') {
+            playChestOpenSound(); // Som de baú
             for (const item of success.items) {
                 await addItemToInventory(item, 1);
             }
@@ -84,6 +86,7 @@ export async function resolveEvent(event, selectedOptionIndex) {
             if (xpRes.leveledUp) rewardMessage += ' (LEVEL UP!)';
         }
 
+        playSuccessSound(); // Som de sucesso
         return {
             success: true,
             roll: roll.total,
@@ -108,6 +111,7 @@ export async function resolveEvent(event, selectedOptionIndex) {
             failMessage = 'Nada de útil foi encontrado.';
         }
 
+        playFailSound(); // Som de falha
         return {
             success: false,
             roll: roll.total,

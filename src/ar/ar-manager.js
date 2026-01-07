@@ -122,39 +122,40 @@ export async function loadMonsterModel(modelPath = '/assets/models/monster.glb')
             modelPath,
             (gltf) => {
                 console.log('✅ Modelo carregado com sucesso!');
-                const model = gltf.scene;
+                const rawModel = gltf.scene;
 
-                // Escala o modelo
-                // Escala o modelo - AUMENTADA DRASTICAMENTE (DE NOVO)
-                model.scale.set(8.0, 8.0, 8.0); // 8x maior que a base (era 3.0)
+                // Cria um container para controlar a escala global
+                // Isso protege a escala contra animações que possam resetar a escala do rawModel
+                const container = new THREE.Group();
+                container.add(rawModel);
+
+                // Escala o CONTAINER (garante tamanho gigante)
+                container.scale.set(10.0, 10.0, 10.0);
 
                 // Configura sombras e MATERIAIS para evitar preto
-                model.traverse((child) => {
+                rawModel.traverse((child) => {
                     if (child.isMesh) {
                         child.castShadow = true;
                         child.receiveShadow = true;
 
                         // Ajuste de material para garantir visibilidade sem envMap
                         if (child.material) {
-                            // Se for muito metálico sem envMap, fica preto. Reduz metalness.
                             if (child.material.metalness > 0.5) child.material.metalness = 0.2;
-                            // Aumenta roughness para espalhar luz
                             if (child.material.roughness < 0.5) child.material.roughness = 0.6;
-                            // Garante emissive nulo para não brilhar cor estranha, ou leve brilho se precisar
                             child.material.needsUpdate = true;
                         }
                     }
                 });
 
-                // Configura animações se houver
+                // Configura animações se houver (mixer continua no modelo original)
                 if (gltf.animations && gltf.animations.length > 0) {
-                    monsterMixer = new THREE.AnimationMixer(model);
+                    monsterMixer = new THREE.AnimationMixer(rawModel);
                     const action = monsterMixer.clipAction(gltf.animations[0]);
                     action.play();
                 }
 
-                monsterModel = model;
-                resolve(model);
+                monsterModel = container;
+                resolve(container);
             },
             (progress) => {
                 if (progress.total > 0) {
@@ -432,7 +433,7 @@ function placeMonster(hitMatrix) {
     monsterModel.position.setFromMatrixPosition(hitMatrix);
 
     // Força a escala correta aqui também, caso tenha sido perdida
-    monsterModel.scale.set(8.0, 8.0, 8.0);
+    monsterModel.scale.set(10.0, 10.0, 10.0);
 
     monsterModel.updateMatrix();
     scene.add(monsterModel);

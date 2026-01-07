@@ -131,7 +131,7 @@ export async function loadMonsterModel(modelPath = '/assets/models/monster.glb')
                 container.add(rawModel);
 
                 // Escala o CONTAINER (tamanho final do monstro)
-                container.scale.set(2.0, 2.0, 2.0);
+                container.scale.set(1.5, 1.5, 1.5);
 
                 // Configura sombras e MATERIAIS para evitar preto
                 rawModel.traverse((child) => {
@@ -434,7 +434,7 @@ function placeMonster(hitMatrix) {
     monsterModel.position.setFromMatrixPosition(hitMatrix);
 
     // Força a escala correta aqui também, caso tenha sido perdida
-    monsterModel.scale.set(2.0, 2.0, 2.0);
+    monsterModel.scale.set(1.5, 1.5, 1.5);
 
     monsterModel.updateMatrix();
     scene.add(monsterModel);
@@ -502,7 +502,7 @@ function renderFrame(time, frame) {
     if (monster) {
         // Pequena animação de "respiração"
         const breathe = Math.sin(time * 0.002) * 0.05; // Efeito sutil
-        monster.scale.setScalar(2.0 + breathe);
+        monster.scale.setScalar(1.5 + breathe);
 
         // Faz o monstro olhar para a câmera
         const cameraPosition = new THREE.Vector3();

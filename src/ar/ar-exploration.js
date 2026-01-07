@@ -34,14 +34,14 @@ const EVENT_MODELS = {
         modelPath: '/assets/models/chest.glb',
         color: 0x8B4513,
         geometry: 'box', // Fallback se GLB não carregar
-        scale: 0.15,
+        scale: 0.6,
         useGLB: true
     },
     'ornate_chest': {
         modelPath: '/assets/models/chest_ornate.glb',
         color: 0x8B4513,
         geometry: 'ornate_box',
-        scale: 0.15,
+        scale: 0.6,
         decorationColor: 0xFFD700,
         useGLB: true
     },
@@ -49,7 +49,7 @@ const EVENT_MODELS = {
         modelPath: '/assets/models/chest.glb', // Usa chest normal mas com efeitos
         color: 0x4a3728,
         geometry: 'suspicious_box',
-        scale: 0.15,
+        scale: 0.6,
         glowColor: 0xFF4444,
         eyeColor: 0xFFFF00,
         useGLB: true,
@@ -59,7 +59,7 @@ const EVENT_MODELS = {
         modelPath: null, // Usa geometria procedural
         color: 0x00FFFF,
         geometry: 'circle',
-        scale: 0.4,
+        scale: 1.6,
         emissive: 0x006666,
         useGLB: false
     },
@@ -67,21 +67,21 @@ const EVENT_MODELS = {
         modelPath: null,
         color: 0x654321,
         geometry: 'tracks',
-        scale: 0.3,
+        scale: 1.2,
         useGLB: false
     },
     'abandoned_shrine': {
         modelPath: null,
         color: 0x808080,
         geometry: 'shrine',
-        scale: 0.4,
+        scale: 1.6,
         useGLB: false
     },
     'mysterious_potion': {
         modelPath: '/assets/models/potion_bottle.glb',
         color: 0x8800FF,
         geometry: 'potion',
-        scale: 0.2,
+        scale: 0.8,
         emissive: 0x440088,
         bubbles: true,
         useGLB: true
@@ -90,7 +90,7 @@ const EVENT_MODELS = {
         modelPath: '/assets/models/skeleton_corpse.glb',
         color: 0x555555,
         geometry: 'corpse',
-        scale: 0.12,
+        scale: 0.48,
         useGLB: true
     },
     // Modelos especiais para estados de perigo
@@ -98,7 +98,7 @@ const EVENT_MODELS = {
         modelPath: '/assets/models/mimic.glb',
         color: 0x6B3A2E,
         geometry: 'mimic',
-        scale: 0.2,
+        scale: 0.8,
         animated: true,
         useGLB: true
     },
@@ -106,7 +106,7 @@ const EVENT_MODELS = {
         modelPath: '/assets/models/trap_trigger.glb',
         color: 0x8B4513,
         geometry: 'box',
-        scale: 0.1,
+        scale: 0.4,
         useGLB: true
     }
 };

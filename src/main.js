@@ -932,6 +932,87 @@ async function handleFlee() {
 }
 
 /**
+ * Handler de Exploração
+ */
+let currentEvent = null;
+
+function handleExplore() {
+    if (!gameState.currentCell) {
+        alert("Você precisa estar localizável para explorar!");
+        return;
+    }
+
+    const event = generateExplorationEvent(gameState.currentCell);
+
+    if (!event) {
+        alert("Você procura por toda parte, mas não encontra nada.");
+        return;
+    }
+
+    showEventModal(event);
+}
+
+function showEventModal(event) {
+    currentEvent = event;
+    const modal = document.getElementById('event-screen');
+    const title = document.getElementById('event-title');
+    const desc = document.getElementById('event-description');
+    const icon = document.getElementById('event-icon');
+    const optionsDiv = document.getElementById('event-options');
+    const closeBtn = document.getElementById('close-event-btn');
+
+    if (!modal || !title || !desc || !optionsDiv) return;
+
+    title.textContent = event.title;
+    desc.textContent = event.description;
+    if (icon) icon.textContent = event.emoji || '📦';
+
+    if (closeBtn) {
+        closeBtn.style.display = 'none';
+        closeBtn.classList.add('hidden');
+    }
+    optionsDiv.innerHTML = '';
+
+    event.options.forEach((opt, index) => {
+        const btn = document.createElement('button');
+        btn.className = 'event-option-btn';
+        btn.innerHTML = `
+            <span class="option-label">${opt.label}</span>
+            <span class="option-dc">CD ${opt.dc}</span>
+        `;
+        btn.onclick = () => handleEventOption(index);
+        optionsDiv.appendChild(btn);
+    });
+
+    modal.classList.add('active');
+}
+
+async function handleEventOption(index) {
+    if (!currentEvent) return;
+
+    const result = await resolveEvent(currentEvent, index);
+
+    const optionsDiv = document.getElementById('event-options');
+    const closeBtn = document.getElementById('close-event-btn');
+
+    if (!optionsDiv) return;
+
+    // Mostra resultado
+    optionsDiv.innerHTML = `
+        <div class="event-result ${result.success ? 'success' : 'failure'}" style="padding: 1rem; text-align: center;">
+            <h3 style="color: ${result.success ? '#4ade80' : '#f87171'};">${result.success ? 'Sucesso!' : 'Falha!'}</h3>
+            <p style="margin: 1rem 0;">${result.message}</p>
+            <p style="font-size: 0.9rem; opacity: 0.7;">Rolagem: ${result.natural} (Total: ${result.roll})</p>
+        </div>
+    `;
+
+    if (closeBtn) {
+        closeBtn.style.display = 'block';
+        closeBtn.classList.remove('hidden');
+    }
+}
+
+/**
  * Handler de vitória
  */
 async function handleVictory() {

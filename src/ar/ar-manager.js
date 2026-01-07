@@ -125,8 +125,8 @@ export async function loadMonsterModel(modelPath = '/assets/models/monster.glb')
                 const model = gltf.scene;
 
                 // Escala o modelo
-                // Escala o modelo - AUMENTADA DRASTICAMENTE
-                model.scale.set(3.0, 3.0, 3.0); // 3x maior para garantir visibilidade
+                // Escala o modelo - AUMENTADA DRASTICAMENTE (DE NOVO)
+                model.scale.set(8.0, 8.0, 8.0); // 8x maior que a base (era 3.0)
 
                 // Configura sombras e MATERIAIS para evitar preto
                 model.traverse((child) => {
@@ -432,7 +432,7 @@ function placeMonster(hitMatrix) {
     monsterModel.position.setFromMatrixPosition(hitMatrix);
 
     // Força a escala correta aqui também, caso tenha sido perdida
-    monsterModel.scale.set(3.0, 3.0, 3.0);
+    monsterModel.scale.set(8.0, 8.0, 8.0);
 
     monsterModel.updateMatrix();
     scene.add(monsterModel);

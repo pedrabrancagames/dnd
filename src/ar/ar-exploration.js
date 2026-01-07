@@ -193,14 +193,19 @@ function initExplorationScene() {
     // Camera (será controlada pelo WebXR)
     camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
 
-    // Luzes
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    // Luzes - Configuração forte para evitar modelos pretos
+    const ambientLight = new THREE.AmbientLight(0xffffff, 2.0); // Aumentado para melhor visibilidade
     scene.add(ambientLight);
 
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight.position.set(0, 10, 5);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
+    directionalLight.position.set(2, 5, 2);
     directionalLight.castShadow = true;
     scene.add(directionalLight);
+
+    // Luz extra vindo da direção da câmera
+    const cameraLight = new THREE.DirectionalLight(0xffeedd, 1.0);
+    cameraLight.position.set(0, 2, 5);
+    scene.add(cameraLight);
 
     // Reticle (indicador de posicionamento)
     const reticleGeometry = new THREE.RingGeometry(0.1, 0.12, 32);
@@ -238,9 +243,15 @@ async function createExplorationObject(event) {
                     child.castShadow = true;
                     child.receiveShadow = true;
 
-                    // Melhora a iluminação do material
+                    // Clona o material para evitar problemas de referência compartilhada
                     if (child.material) {
+                        child.material = child.material.clone();
+
+                        // Ajuste de material para garantir visibilidade
+                        if (child.material.metalness > 0.5) child.material.metalness = 0.2;
+                        if (child.material.roughness < 0.5) child.material.roughness = 0.6;
                         child.material.envMapIntensity = 1.5;
+                        child.material.needsUpdate = true;
                     }
                 }
             });
@@ -1004,22 +1015,64 @@ export async function endExplorationAR() {
         xrSession = null;
     }
 
-    // Limpa a cena
+    // Limpa a cena profundamente (dispose de geometrias e materiais)
     if (scene) {
+        scene.traverse((object) => {
+            if (object.isMesh) {
+                if (object.geometry) {
+                    object.geometry.dispose();
+                }
+                if (object.material) {
+                    if (Array.isArray(object.material)) {
+                        object.material.forEach(mat => {
+                            if (mat.map) mat.map.dispose();
+                            mat.dispose();
+                        });
+                    } else {
+                        if (object.material.map) object.material.map.dispose();
+                        object.material.dispose();
+                    }
+                }
+            }
+        });
+
         while (scene.children.length > 0) {
             scene.remove(scene.children[0]);
         }
+        scene = null;
     }
 
-    // Remove o canvas
-    if (renderer?.domElement) {
-        renderer.domElement.remove();
+    // Remove o canvas e limpa o renderer completamente
+    if (renderer) {
+        const arScreen = document.getElementById('exploration-ar-screen');
+        if (arScreen && renderer.domElement && renderer.domElement.parentNode === arScreen) {
+            arScreen.removeChild(renderer.domElement);
+        }
+
+        try {
+            renderer.dispose();
+            renderer.forceContextLoss();
+        } catch (e) {
+            console.warn('Erro ao limpar renderer:', e);
+        }
+        renderer = null;
     }
+
+    // Limpa referências
+    camera = null;
+    reticle = null;
+    xrReferenceSpace = null;
+    xrHitTestSource = null;
 
     explorationARActive = false;
     isObjectPlaced = false;
     explorationObject = null;
     explorationMixer = null;
+
+    // Limpa cache de modelos para forçar recarregamento limpo
+    modelCache.clear();
+
+    console.log('🧹 Sessão AR de exploração encerrada e limpa');
 }
 
 /**

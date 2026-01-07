@@ -122,9 +122,12 @@ async function init() {
 
     } catch (error) {
         console.error('❌ Erro fatal na inicialização:', error);
-        updateLoadingStatus('Erro ao iniciar. Tente recarregar.');
-        // Tenta ir para login mesmo assim
-        setTimeout(() => setScreen('login'), 2000);
+        // Mostra erro visível na tela para debug mobile
+        const errorMsg = `Erro: ${error.message || error}\n\nStack: ${error.stack || 'N/A'}`;
+        updateLoadingStatus(errorMsg);
+
+        // Tenta ir para login mesmo assim após 5 segundos
+        setTimeout(() => setScreen('login'), 5000);
     }
 }
 

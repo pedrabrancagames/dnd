@@ -1340,13 +1340,23 @@ function updateInventoryScreen() {
         div.dataset.instanceId = invItem.id;
 
         // Ícone baseado no tipo
+        // Ícone baseado no tipo ou específico do item
         const icons = {
             weapon: '⚔️',
             armor: '🛡️',
             accessory: '💍',
             consumable: '🧪'
         };
-        div.textContent = icons[invItem.item.type] || '📦';
+
+        const itemIcon = invItem.item.icon || icons[invItem.item.type] || '📦';
+
+        if (invItem.item.image) {
+            div.innerHTML = `<img src="${invItem.item.image}" alt="${invItem.item.name}" class="item-icon-img" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+                             <span class="item-icon-emoji" style="display:none">${itemIcon}</span>`;
+        } else {
+            div.innerHTML = `<span class="item-icon-emoji">${itemIcon}</span>`;
+        }
+
 
         if (invItem.quantity > 1) {
             const qty = document.createElement('span');

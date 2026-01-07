@@ -28,7 +28,9 @@ export const items = [
         damage: '1d6',
         damageType: 'slashing',
         value: 10,
-        modelPath: '/assets/models/weapon_shortsword.glb'
+        modelPath: '/assets/models/weapon_shortsword.glb',
+        icon: '🗡️',
+        image: '/icons/items/weapon_shortsword.png'
     },
     {
         id: 'longsword',
@@ -39,7 +41,9 @@ export const items = [
         damage: '1d8',
         damageType: 'slashing',
         value: 15,
-        modelPath: '/assets/models/weapon_longsword.glb'
+        modelPath: '/assets/models/weapon_longsword.glb',
+        icon: '⚔️',
+        image: '/icons/items/weapon_longsword.png'
     },
     {
         id: 'dagger',
@@ -50,7 +54,9 @@ export const items = [
         damage: '1d4',
         damageType: 'piercing',
         value: 2,
-        modelPath: '/assets/models/weapon_dagger.glb'
+        modelPath: '/assets/models/weapon_dagger.glb',
+        icon: '🔪',
+        image: '/icons/items/weapon_dagger.png'
     },
     {
         id: 'shortbow',
@@ -61,7 +67,9 @@ export const items = [
         damage: '1d6',
         damageType: 'piercing',
         value: 25,
-        modelPath: '/assets/models/weapon_bow.glb'
+        modelPath: '/assets/models/weapon_bow.glb',
+        icon: '🏹',
+        image: '/icons/items/weapon_bow.png'
     },
     {
         id: 'staff',
@@ -72,7 +80,9 @@ export const items = [
         damage: '1d6',
         damageType: 'bludgeoning',
         value: 5,
-        modelPath: '/assets/models/weapon_staff.glb'
+        modelPath: '/assets/models/weapon_staff.glb',
+        icon: '🦯',
+        image: '/icons/items/weapon_staff.png'
     },
     {
         id: 'mace',
@@ -83,7 +93,9 @@ export const items = [
         damage: '1d6',
         damageType: 'bludgeoning',
         value: 5,
-        modelPath: '/assets/models/weapon_mace.glb'
+        modelPath: '/assets/models/weapon_mace.glb',
+        icon: '🔨',
+        image: '/icons/items/weapon_mace.png'
     },
 
     // Armas Mágicas
@@ -97,7 +109,9 @@ export const items = [
         damageType: 'slashing',
         attackBonus: 1,
         value: 500,
-        modelPath: '/assets/models/weapon_longsword.glb'
+        modelPath: '/assets/models/weapon_longsword.glb',
+        icon: '⚔️✨',
+        image: '/icons/items/weapon_longsword_plus1.png'
     },
     {
         id: 'flame_tongue',
@@ -111,7 +125,9 @@ export const items = [
         damageType: 'slashing',
         effect: 'Adiciona 2d6 de dano de fogo',
         value: 5000,
-        modelPath: '/assets/models/weapon_longsword.glb'
+        modelPath: '/assets/models/weapon_longsword.glb',
+        icon: '🔥',
+        image: '/icons/items/weapon_flame_tongue.png'
     },
     {
         id: 'sunblade',
@@ -126,7 +142,9 @@ export const items = [
         effect: '+2d6 radiante contra mortos-vivos',
         attackBonus: 2,
         value: 8000,
-        modelPath: '/assets/models/weapon_longsword.glb'
+        modelPath: '/assets/models/weapon_longsword.glb',
+        icon: '☀️',
+        image: '/icons/items/weapon_sunblade.png'
     },
 
     // Armaduras
@@ -137,7 +155,9 @@ export const items = [
         type: 'armor',
         rarity: 'common',
         acBonus: 1,
-        value: 10
+        value: 10,
+        icon: '🧥',
+        image: '/icons/items/armor_leather.png'
     },
     {
         id: 'chain_mail',
@@ -146,7 +166,9 @@ export const items = [
         type: 'armor',
         rarity: 'common',
         acBonus: 4,
-        value: 75
+        value: 75,
+        icon: '⛓️',
+        image: '/icons/items/armor_chain.png'
     },
     {
         id: 'plate_armor',
@@ -155,7 +177,9 @@ export const items = [
         type: 'armor',
         rarity: 'uncommon',
         acBonus: 6,
-        value: 1500
+        value: 1500,
+        icon: '🛡️',
+        image: '/icons/items/armor_plate.png'
     },
     {
         id: 'armor_plus1',
@@ -165,7 +189,9 @@ export const items = [
         rarity: 'rare',
         acBonus: 5,
         effect: 'Armadura mágica',
-        value: 4000
+        value: 4000,
+        icon: '🛡️✨',
+        image: '/icons/items/armor_plus1.png'
     },
 
     // Escudos
@@ -178,7 +204,9 @@ export const items = [
         rarity: 'common',
         acBonus: 2,
         value: 10,
-        modelPath: '/assets/models/shield_basic.glb'
+        modelPath: '/assets/models/shield_basic.glb',
+        icon: '🛡️',
+        image: '/icons/items/armor_shield.png'
     },
 
     // Acessórios
@@ -190,7 +218,9 @@ export const items = [
         rarity: 'rare',
         acBonus: 1,
         effect: '+1 AC e Saving Throws',
-        value: 3500
+        value: 3500,
+        icon: '💍',
+        image: '/icons/items/acc_ring.png'
     },
     {
         id: 'cloak_protection',
@@ -200,7 +230,9 @@ export const items = [
         rarity: 'uncommon',
         acBonus: 1,
         effect: '+1 AC e Saving Throws',
-        value: 1500
+        value: 1500,
+        icon: '🧥',
+        image: '/icons/items/acc_cloak.png'
     },
     {
         id: 'boots_speed',
@@ -209,7 +241,9 @@ export const items = [
         type: 'accessory',
         rarity: 'rare',
         effect: 'Dobra velocidade',
-        value: 4000
+        value: 4000,
+        icon: '👢',
+        image: '/icons/items/acc_boots.png'
     },
     {
         id: 'gauntlets_ogre',
@@ -219,7 +253,9 @@ export const items = [
         rarity: 'uncommon',
         effect: 'STR vira 19',
         setStr: 19,
-        value: 2000
+        value: 2000,
+        icon: '🥊',
+        image: '/icons/items/acc_gauntlets.png'
     },
 
     // Consumíveis
@@ -231,7 +267,9 @@ export const items = [
         rarity: 'common',
         effect: 'Cura 2d4+2 HP',
         healDice: '2d4+2',
-        value: 50
+        value: 50,
+        icon: '🍷',
+        image: '/icons/items/potion_healing.png'
     },
     {
         id: 'potion_healing_greater',
@@ -241,7 +279,9 @@ export const items = [
         rarity: 'uncommon',
         effect: 'Cura 4d4+4 HP',
         healDice: '4d4+4',
-        value: 200
+        value: 200,
+        icon: '⚗️',
+        image: '/icons/items/potion_greater.png'
     },
     {
         id: 'potion_healing_superior',
@@ -251,7 +291,9 @@ export const items = [
         rarity: 'rare',
         effect: 'Cura 8d4+8 HP',
         healDice: '8d4+8',
-        value: 500
+        value: 500,
+        icon: '🧪',
+        image: '/icons/items/potion_superior.png'
     },
     {
         id: 'potion_heroism',
@@ -261,7 +303,9 @@ export const items = [
         rarity: 'rare',
         effect: '10 HP temporário + vantagem em saves',
         tempHp: 10,
-        value: 300
+        value: 300,
+        icon: '🍺',
+        image: '/icons/items/potion_heroism.png'
     },
     {
         id: 'scroll_fireball',
@@ -272,7 +316,9 @@ export const items = [
         effect: 'Conjura Fireball (8d6 fogo)',
         spellDamage: '8d6',
         spellType: 'fire',
-        value: 400
+        value: 400,
+        icon: '📜',
+        image: '/icons/items/scroll_fire.png'
     }
 ];
 

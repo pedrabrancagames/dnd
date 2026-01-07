@@ -7,7 +7,10 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-    console.warn('⚠️ Supabase não configurado. Configure as variáveis VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY');
+    console.error('❌ SUPABASE NÃO CONFIGURADO!');
+    console.error('Configure as variáveis VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY no Vercel');
+    console.error('supabaseUrl:', supabaseUrl);
+    console.error('supabaseAnonKey:', supabaseAnonKey ? '[PRESENTE]' : '[AUSENTE]');
 }
 
 export const supabase = supabaseUrl && supabaseAnonKey

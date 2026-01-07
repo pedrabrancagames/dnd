@@ -18,6 +18,13 @@
     filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.5));
 }
 
+.event-icon-img {
+    width: 100px;
+    height: 100px;
+    object-fit: contain;
+    filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.4));
+}
+
 #event-title {
     color: var(--accent-gold);
     font-family: 'Cinzel', serif;

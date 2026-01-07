@@ -8,6 +8,7 @@ export const EXPLORATION_EVENTS = [
         title: 'Baú Antigo',
         description: 'Você encontra um baú de madeira podre sob pedras.',
         emoji: '📦',
+        image: '/icons/items/event_chest.png',
         options: [
             {
                 skill: 'athletics',
@@ -32,6 +33,7 @@ export const EXPLORATION_EVENTS = [
         title: 'Glifo Mágico',
         description: 'Um símbolo brilhante está gravado no chão.',
         emoji: '✨',
+        image: '/icons/items/event_glyph.png',
         options: [
             {
                 skill: 'arcana',
@@ -56,6 +58,7 @@ export const EXPLORATION_EVENTS = [
         title: 'Rastros Recentes',
         description: 'Pegadas frescas indicam que algo passou por aqui.',
         emoji: '🐾',
+        image: '/icons/items/event_tracks.png',
         options: [
             {
                 skill: 'survival',
@@ -80,6 +83,7 @@ export const EXPLORATION_EVENTS = [
         title: 'Santuário Abandonado',
         description: 'Uma pequena estátua coberta de musgo.',
         emoji: '⛩️',
+        image: '/icons/items/event_shrine.png',
         options: [
             {
                 skill: 'religion',

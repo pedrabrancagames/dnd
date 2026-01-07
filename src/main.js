@@ -1116,7 +1116,15 @@ function showEventModal(event) {
 
     title.textContent = event.title;
     desc.textContent = event.description;
-    if (icon) icon.textContent = event.emoji || '📦';
+
+    // Usa imagem se disponível, senão emoji
+    if (icon) {
+        if (event.image) {
+            icon.innerHTML = `<img src="${event.image}" alt="${event.title}" class="event-icon-img">`;
+        } else {
+            icon.textContent = event.emoji || '📦';
+        }
+    }
 
     if (closeBtn) {
         closeBtn.style.display = 'none';

@@ -121,7 +121,7 @@ export async function loadMonsterModel(modelPath = '/assets/models/monster.glb')
                 const model = gltf.scene;
 
                 // Escala o modelo
-                model.scale.set(0.5, 0.5, 0.5);
+                model.scale.set(1.0, 1.0, 1.0);
 
                 // Configura sombras
                 model.traverse((child) => {
@@ -281,9 +281,9 @@ function updateWeaponPosition() {
     rightOffset.crossVectors(cameraDirection, new THREE.Vector3(0, 1, 0)).normalize();
 
     weapon.position.copy(cameraPosition)
-        .add(cameraDirection.multiplyScalar(0.3)) // À frente
-        .add(rightOffset.multiplyScalar(0.15))    // À direita
-        .add(new THREE.Vector3(0, -0.15, 0));     // Abaixo
+        .add(cameraDirection.multiplyScalar(0.4)) // À frente (mais longe para evitar clipping)
+        .add(rightOffset.multiplyScalar(0.10))    // À direita (menos offset lateral)
+        .add(new THREE.Vector3(0, -0.10, 0));     // Abaixo (mais alto)
 
     // Rotaciona para apontar na direção da câmera
     weapon.lookAt(

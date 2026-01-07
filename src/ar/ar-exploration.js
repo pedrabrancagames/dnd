@@ -81,7 +81,7 @@ const EVENT_MODELS = {
         modelPath: '/assets/models/potion_bottle.glb',
         color: 0x8800FF,
         geometry: 'potion',
-        scale: 0.8,
+        scale: 0.5,
         emissive: 0x440088,
         bubbles: true,
         useGLB: true
@@ -90,7 +90,7 @@ const EVENT_MODELS = {
         modelPath: '/assets/models/skeleton_corpse.glb',
         color: 0x555555,
         geometry: 'corpse',
-        scale: 0.48,
+        scale: 1.0,
         useGLB: true
     },
     // Modelos especiais para estados de perigo

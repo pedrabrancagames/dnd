@@ -4,6 +4,7 @@
 
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 
 let renderer = null;
 let scene = null;
@@ -30,68 +31,122 @@ let mouse = new THREE.Vector2();
 // Mapeamento de eventos para modelos 3D
 const EVENT_MODELS = {
     'ancient_chest': {
-        model: null, // Usaremos geometria procedural
+        modelPath: '/assets/models/chest.glb',
         color: 0x8B4513,
-        geometry: 'box',
-        scale: 0.3
+        geometry: 'box', // Fallback se GLB não carregar
+        scale: 0.15,
+        useGLB: true
     },
     'ornate_chest': {
-        model: null,
+        modelPath: '/assets/models/chest_ornate.glb',
         color: 0x8B4513,
         geometry: 'ornate_box',
-        scale: 0.35,
-        decorationColor: 0xFFD700 // Dourado para decorações
+        scale: 0.15,
+        decorationColor: 0xFFD700,
+        useGLB: true
     },
     'suspicious_chest': {
-        model: null,
+        modelPath: '/assets/models/chest.glb', // Usa chest normal mas com efeitos
         color: 0x4a3728,
         geometry: 'suspicious_box',
-        scale: 0.3,
-        glowColor: 0xFF4444, // Brilho vermelho sutil
-        eyeColor: 0xFFFF00 // Olhos se for mímico detectado
+        scale: 0.15,
+        glowColor: 0xFF4444,
+        eyeColor: 0xFFFF00,
+        useGLB: true,
+        addWarningEffect: true
     },
     'magic_glyph': {
-        model: null,
+        modelPath: null, // Usa geometria procedural
         color: 0x00FFFF,
         geometry: 'circle',
         scale: 0.4,
-        emissive: 0x006666
+        emissive: 0x006666,
+        useGLB: false
     },
     'monster_tracks': {
-        model: null,
+        modelPath: null,
         color: 0x654321,
         geometry: 'tracks',
-        scale: 0.3
+        scale: 0.3,
+        useGLB: false
     },
     'abandoned_shrine': {
-        model: null,
+        modelPath: null,
         color: 0x808080,
         geometry: 'shrine',
-        scale: 0.4
+        scale: 0.4,
+        useGLB: false
     },
     'mysterious_potion': {
-        model: null,
+        modelPath: '/assets/models/potion_bottle.glb',
         color: 0x8800FF,
         geometry: 'potion',
-        scale: 0.25,
+        scale: 0.2,
         emissive: 0x440088,
-        bubbles: true
+        bubbles: true,
+        useGLB: true
     },
     'fallen_adventurer': {
-        model: null,
+        modelPath: '/assets/models/skeleton_corpse.glb',
         color: 0x555555,
         geometry: 'corpse',
-        scale: 0.35
+        scale: 0.12,
+        useGLB: true
     },
     // Modelos especiais para estados de perigo
     'mimic_revealed': {
-        model: null,
+        modelPath: '/assets/models/mimic.glb',
         color: 0x6B3A2E,
         geometry: 'mimic',
-        scale: 0.4,
-        animated: true
+        scale: 0.2,
+        animated: true,
+        useGLB: true
+    },
+    'trap_trigger': {
+        modelPath: '/assets/models/trap_trigger.glb',
+        color: 0x8B4513,
+        geometry: 'box',
+        scale: 0.1,
+        useGLB: true
     }
 };
+
+// Loader de modelos GLB com suporte a Draco
+const dracoLoader = new DRACOLoader();
+dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+dracoLoader.setDecoderConfig({ type: 'js' }); // Use JS decoder for better compatibility
+
+const gltfLoader = new GLTFLoader();
+gltfLoader.setDRACOLoader(dracoLoader);
+
+const modelCache = new Map();
+
+/**
+ * Carrega um modelo GLB com cache
+ * @param {string} path - Caminho do modelo
+ * @returns {Promise<THREE.Group>}
+ */
+async function loadGLBModel(path) {
+    if (modelCache.has(path)) {
+        return modelCache.get(path).clone();
+    }
+
+    return new Promise((resolve, reject) => {
+        gltfLoader.load(
+            path,
+            (gltf) => {
+                const model = gltf.scene;
+                modelCache.set(path, model);
+                resolve(model.clone());
+            },
+            undefined,
+            (error) => {
+                console.warn(`Falha ao carregar modelo ${path}:`, error);
+                reject(error);
+            }
+        );
+    });
+}
 
 /**
  * Verifica se AR está disponível
@@ -165,12 +220,53 @@ function initExplorationScene() {
 /**
  * Cria o objeto de exploração baseado no evento
  * @param {Object} event - Evento de exploração
- * @returns {THREE.Group}
+ * @returns {Promise<THREE.Group>}
  */
-function createExplorationObject(event) {
+async function createExplorationObject(event) {
     const group = new THREE.Group();
     const config = EVENT_MODELS[event.id] || EVENT_MODELS['ancient_chest'];
 
+    // Tenta carregar modelo GLB se disponível
+    if (config.useGLB && config.modelPath) {
+        try {
+            const glbModel = await loadGLBModel(config.modelPath);
+            glbModel.scale.setScalar(config.scale);
+
+            // Ajusta materiais para melhor visualização em AR
+            glbModel.traverse((child) => {
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+
+                    // Melhora a iluminação do material
+                    if (child.material) {
+                        child.material.envMapIntensity = 1.5;
+                    }
+                }
+            });
+
+            // Adiciona efeitos especiais se necessário
+            if (config.addWarningEffect) {
+                const warningLight = new THREE.PointLight(config.glowColor || 0xFF4444, 0.5, 0.5);
+                warningLight.position.y = 0.1;
+                warningLight.name = 'warningLight';
+                glbModel.add(warningLight);
+            }
+
+            group.add(glbModel);
+            group.name = 'explorationObject';
+            group.userData = { event: event, clickable: true, isGLB: true };
+
+            console.log(`✅ Modelo GLB carregado: ${config.modelPath}`);
+            return group;
+
+        } catch (error) {
+            console.warn(`⚠️ Fallback para geometria procedural: ${event.id}`);
+            // Continua para criar geometria procedural como fallback
+        }
+    }
+
+    // Fallback: Geometria procedural
     let mesh;
 
     switch (config.geometry) {
@@ -670,8 +766,8 @@ export async function startExplorationAR({ event, onFound, onClick, onEnd } = {}
         // Configura detecção de clique/toque
         xrSession.addEventListener('select', handleSelect);
 
-        // Cria o objeto de exploração
-        explorationObject = createExplorationObject(event);
+        // Cria o objeto de exploração (async para carregar GLB)
+        explorationObject = await createExplorationObject(event);
 
         // Inicia o loop de renderização
         explorationARActive = true;

@@ -131,8 +131,8 @@ export async function loadMonsterModel(modelPath = '/assets/models/monster.glb')
                 const container = new THREE.Group();
                 container.add(rawModel);
 
-                // Escala o CONTAINER (garante tamanho gigante)
-                container.scale.set(10.0, 10.0, 10.0);
+                // Escala o CONTAINER (tamanho final do monstro)
+                container.scale.set(2.0, 2.0, 2.0);
 
                 // Configura sombras e MATERIAIS para evitar preto
                 rawModel.traverse((child) => {
@@ -435,7 +435,7 @@ function placeMonster(hitMatrix) {
     monsterModel.position.setFromMatrixPosition(hitMatrix);
 
     // Força a escala correta aqui também, caso tenha sido perdida
-    monsterModel.scale.set(10.0, 10.0, 10.0);
+    monsterModel.scale.set(2.0, 2.0, 2.0);
 
     monsterModel.updateMatrix();
     scene.add(monsterModel);
@@ -498,9 +498,9 @@ function renderFrame(time, frame) {
     // Atualiza a animação do monstro (pulsação para indicar que está vivo)
     const monster = scene.getObjectByName('monster');
     if (monster) {
-        // Pequena animação de "respiração" - ESCALA BASE 10.0 (não 0.5!)
-        const breathe = Math.sin(time * 0.002) * 0.2; // Efeito sutil
-        monster.scale.setScalar(10.0 + breathe);
+        // Pequena animação de "respiração"
+        const breathe = Math.sin(time * 0.002) * 0.05; // Efeito sutil
+        monster.scale.setScalar(2.0 + breathe);
 
         // Faz o monstro olhar para a câmera
         const cameraPosition = new THREE.Vector3();

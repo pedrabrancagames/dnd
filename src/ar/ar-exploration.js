@@ -35,6 +35,21 @@ const EVENT_MODELS = {
         geometry: 'box',
         scale: 0.3
     },
+    'ornate_chest': {
+        model: null,
+        color: 0x8B4513,
+        geometry: 'ornate_box',
+        scale: 0.35,
+        decorationColor: 0xFFD700 // Dourado para decorações
+    },
+    'suspicious_chest': {
+        model: null,
+        color: 0x4a3728,
+        geometry: 'suspicious_box',
+        scale: 0.3,
+        glowColor: 0xFF4444, // Brilho vermelho sutil
+        eyeColor: 0xFFFF00 // Olhos se for mímico detectado
+    },
     'magic_glyph': {
         model: null,
         color: 0x00FFFF,
@@ -53,6 +68,28 @@ const EVENT_MODELS = {
         color: 0x808080,
         geometry: 'shrine',
         scale: 0.4
+    },
+    'mysterious_potion': {
+        model: null,
+        color: 0x8800FF,
+        geometry: 'potion',
+        scale: 0.25,
+        emissive: 0x440088,
+        bubbles: true
+    },
+    'fallen_adventurer': {
+        model: null,
+        color: 0x555555,
+        geometry: 'corpse',
+        scale: 0.35
+    },
+    // Modelos especiais para estados de perigo
+    'mimic_revealed': {
+        model: null,
+        color: 0x6B3A2E,
+        geometry: 'mimic',
+        scale: 0.4,
+        animated: true
     }
 };
 
@@ -284,6 +321,278 @@ function createExplorationObject(event) {
             group.add(orb);
 
             mesh = base;
+            break;
+
+        case 'ornate_box': // Baú ornamentado
+            const ornateBoxGeom = new THREE.BoxGeometry(0.35, 0.22, 0.22);
+            const ornateBoxMat = new THREE.MeshStandardMaterial({
+                color: config.color,
+                roughness: 0.5,
+                metalness: 0.4
+            });
+            mesh = new THREE.Mesh(ornateBoxGeom, ornateBoxMat);
+
+            // Tampa ornamentada
+            const ornateLidGeom = new THREE.BoxGeometry(0.37, 0.06, 0.24);
+            const ornateLidMat = new THREE.MeshStandardMaterial({
+                color: 0x6B4423,
+                roughness: 0.4,
+                metalness: 0.3
+            });
+            const ornateLid = new THREE.Mesh(ornateLidGeom, ornateLidMat);
+            ornateLid.position.y = 0.14;
+            group.add(ornateLid);
+
+            // Decorações douradas
+            const decoMat = new THREE.MeshStandardMaterial({
+                color: config.decorationColor || 0xFFD700,
+                metalness: 0.9,
+                roughness: 0.1,
+                emissive: 0x886600,
+                emissiveIntensity: 0.3
+            });
+
+            // Cantos dourados
+            for (let i = 0; i < 4; i++) {
+                const cornerGeom = new THREE.BoxGeometry(0.04, 0.24, 0.04);
+                const corner = new THREE.Mesh(cornerGeom, decoMat);
+                corner.position.x = (i % 2) * 0.34 - 0.17;
+                corner.position.z = Math.floor(i / 2) * 0.2 - 0.1;
+                group.add(corner);
+            }
+
+            // Joia central
+            const gemGeom = new THREE.OctahedronGeometry(0.03);
+            const gemMat = new THREE.MeshStandardMaterial({
+                color: 0xFF0000,
+                emissive: 0x880000,
+                emissiveIntensity: 0.5,
+                metalness: 0.3,
+                roughness: 0.1
+            });
+            const gem = new THREE.Mesh(gemGeom, gemMat);
+            gem.position.y = 0.17;
+            gem.position.z = 0.13;
+            group.add(gem);
+            break;
+
+        case 'suspicious_box': // Baú suspeito (pode ser mímico)
+            const suspBoxGeom = new THREE.BoxGeometry(0.3, 0.2, 0.2);
+            const suspBoxMat = new THREE.MeshStandardMaterial({
+                color: config.color,
+                roughness: 0.8,
+                metalness: 0.2
+            });
+            mesh = new THREE.Mesh(suspBoxGeom, suspBoxMat);
+
+            // Tampa levemente aberta
+            const suspLidGeom = new THREE.BoxGeometry(0.32, 0.05, 0.22);
+            const suspLidMat = new THREE.MeshStandardMaterial({
+                color: 0x3a2820,
+                roughness: 0.7
+            });
+            const suspLid = new THREE.Mesh(suspLidGeom, suspLidMat);
+            suspLid.position.y = 0.12;
+            suspLid.rotation.x = -0.15; // Ligeiramente aberta
+            suspLid.position.z = -0.02;
+            group.add(suspLid);
+
+            // Brilho vermelho sutil (indicador de perigo)
+            const warningLight = new THREE.PointLight(config.glowColor || 0xFF4444, 0.5, 0.5);
+            warningLight.position.y = 0.1;
+            warningLight.name = 'warningLight';
+            group.add(warningLight);
+
+            // Leve "respiração" - será animado no render loop
+            group.userData.isSuspicious = true;
+            break;
+
+        case 'mimic': // Mímico revelado
+            // Corpo do baú (boca aberta)
+            const mimicBodyGeom = new THREE.BoxGeometry(0.35, 0.2, 0.25);
+            const mimicBodyMat = new THREE.MeshStandardMaterial({
+                color: config.color,
+                roughness: 0.7,
+                metalness: 0.2
+            });
+            const mimicBody = new THREE.Mesh(mimicBodyGeom, mimicBodyMat);
+            group.add(mimicBody);
+
+            // Tampa como mandíbula superior (aberta)
+            const mimicJawGeom = new THREE.BoxGeometry(0.37, 0.05, 0.27);
+            const mimicJawMat = new THREE.MeshStandardMaterial({
+                color: 0x5a3a2e,
+                roughness: 0.6
+            });
+            const mimicJaw = new THREE.Mesh(mimicJawGeom, mimicJawMat);
+            mimicJaw.position.y = 0.15;
+            mimicJaw.position.z = -0.1;
+            mimicJaw.rotation.x = -0.6; // Boca aberta
+            mimicJaw.name = 'jaw';
+            group.add(mimicJaw);
+
+            // Dentes superiores
+            const toothMat = new THREE.MeshStandardMaterial({
+                color: 0xFFFFE0,
+                roughness: 0.3
+            });
+            for (let i = 0; i < 6; i++) {
+                const toothGeom = new THREE.ConeGeometry(0.015, 0.05, 4);
+                const tooth = new THREE.Mesh(toothGeom, toothMat);
+                tooth.position.x = i * 0.05 - 0.125;
+                tooth.position.y = 0.12;
+                tooth.position.z = 0.08;
+                tooth.rotation.x = Math.PI;
+                group.add(tooth);
+            }
+
+            // Dentes inferiores
+            for (let i = 0; i < 5; i++) {
+                const toothGeom = new THREE.ConeGeometry(0.012, 0.04, 4);
+                const tooth = new THREE.Mesh(toothGeom, toothMat);
+                tooth.position.x = i * 0.05 - 0.1;
+                tooth.position.y = 0.1;
+                tooth.position.z = 0.1;
+                group.add(tooth);
+            }
+
+            // Língua
+            const tongueGeom = new THREE.BoxGeometry(0.08, 0.02, 0.15);
+            const tongueMat = new THREE.MeshStandardMaterial({
+                color: 0xFF4466,
+                roughness: 0.8
+            });
+            const tongue = new THREE.Mesh(tongueGeom, tongueMat);
+            tongue.position.y = 0.05;
+            tongue.position.z = 0.05;
+            tongue.name = 'tongue';
+            group.add(tongue);
+
+            // Olhos
+            const eyeMat = new THREE.MeshStandardMaterial({
+                color: 0xFFFF00,
+                emissive: 0xFFFF00,
+                emissiveIntensity: 0.8
+            });
+            for (let i = 0; i < 2; i++) {
+                const eyeGeom = new THREE.SphereGeometry(0.025, 8, 8);
+                const eye = new THREE.Mesh(eyeGeom, eyeMat);
+                eye.position.x = i * 0.15 - 0.075;
+                eye.position.y = 0.12;
+                eye.position.z = 0.1;
+                eye.name = 'eye';
+                group.add(eye);
+
+                // Pupila
+                const pupilGeom = new THREE.SphereGeometry(0.01, 6, 6);
+                const pupilMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+                const pupil = new THREE.Mesh(pupilGeom, pupilMat);
+                pupil.position.z = 0.02;
+                eye.add(pupil);
+            }
+
+            group.userData.isMimic = true;
+            mesh = mimicBody;
+            break;
+
+        case 'potion': // Poção misteriosa
+            // Frasco
+            const bottleGeom = new THREE.CylinderGeometry(0.04, 0.05, 0.12, 8);
+            const bottleMat = new THREE.MeshStandardMaterial({
+                color: 0x88AAFF,
+                transparent: true,
+                opacity: 0.6,
+                roughness: 0.1,
+                metalness: 0.3
+            });
+            const bottle = new THREE.Mesh(bottleGeom, bottleMat);
+            group.add(bottle);
+
+            // Líquido
+            const liquidGeom = new THREE.CylinderGeometry(0.035, 0.045, 0.08, 8);
+            const liquidMat = new THREE.MeshStandardMaterial({
+                color: config.color,
+                emissive: config.emissive || 0x440088,
+                emissiveIntensity: 0.6,
+                transparent: true,
+                opacity: 0.8
+            });
+            const liquid = new THREE.Mesh(liquidGeom, liquidMat);
+            liquid.position.y = -0.01;
+            liquid.name = 'liquid';
+            group.add(liquid);
+
+            // Gargalo
+            const neckGeom = new THREE.CylinderGeometry(0.02, 0.03, 0.04, 8);
+            const neck = new THREE.Mesh(neckGeom, bottleMat);
+            neck.position.y = 0.08;
+            group.add(neck);
+
+            // Rolha
+            const corkGeom = new THREE.CylinderGeometry(0.022, 0.02, 0.025, 6);
+            const corkMat = new THREE.MeshStandardMaterial({
+                color: 0x8B4513,
+                roughness: 0.9
+            });
+            const cork = new THREE.Mesh(corkGeom, corkMat);
+            cork.position.y = 0.11;
+            group.add(cork);
+
+            group.userData.hasBubbles = config.bubbles;
+            mesh = bottle;
+            break;
+
+        case 'corpse': // Aventureiro caído
+            // Corpo (simplificado)
+            const bodyGeom = new THREE.CapsuleGeometry(0.08, 0.25, 4, 8);
+            const bodyMat = new THREE.MeshStandardMaterial({
+                color: config.color,
+                roughness: 0.9
+            });
+            const body = new THREE.Mesh(bodyGeom, bodyMat);
+            body.rotation.z = Math.PI / 2;
+            body.rotation.y = 0.3;
+            body.position.y = 0.08;
+            group.add(body);
+
+            // Mochila/sacola
+            const bagGeom = new THREE.BoxGeometry(0.1, 0.08, 0.06);
+            const bagMat = new THREE.MeshStandardMaterial({
+                color: 0x654321,
+                roughness: 0.8
+            });
+            const bag = new THREE.Mesh(bagGeom, bagMat);
+            bag.position.x = 0.15;
+            bag.position.y = 0.05;
+            bag.rotation.z = 0.2;
+            group.add(bag);
+
+            // Espada caída
+            const swordBladeGeom = new THREE.BoxGeometry(0.02, 0.01, 0.2);
+            const swordMat = new THREE.MeshStandardMaterial({
+                color: 0xC0C0C0,
+                metalness: 0.8,
+                roughness: 0.2
+            });
+            const swordBlade = new THREE.Mesh(swordBladeGeom, swordMat);
+            swordBlade.position.x = -0.2;
+            swordBlade.position.y = 0.01;
+            swordBlade.rotation.y = 0.5;
+            group.add(swordBlade);
+
+            // Punho da espada
+            const hiltGeom = new THREE.BoxGeometry(0.03, 0.02, 0.05);
+            const hiltMat = new THREE.MeshStandardMaterial({
+                color: 0x8B4513
+            });
+            const hilt = new THREE.Mesh(hiltGeom, hiltMat);
+            hilt.position.x = -0.2;
+            hilt.position.z = -0.12;
+            hilt.position.y = 0.01;
+            hilt.rotation.y = 0.5;
+            group.add(hilt);
+
+            mesh = body;
             break;
 
         default:

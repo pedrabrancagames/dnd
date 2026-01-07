@@ -287,6 +287,33 @@ export const monsters = [
         immunities: [],
         spawnWeight: 0.05,
         isBoss: true
+    },
+
+    // Mímico - Monstro especial que se disfarça de baú
+    {
+        id: 'mimic',
+        name: 'Mimic',
+        namePt: 'Mímico',
+        cr: 2,
+        hp: 58,
+        ac: 12,
+        damage: '2d8+3',
+        xp: 450,
+        type: 'Monstruosidade',
+        biomes: ['ruins', 'urban'],
+        emoji: '📦',
+        vulnerabilities: [],
+        resistances: [],
+        immunities: ['acid'],
+        spawnWeight: 0, // Não spawna naturalmente, só via armadilhas
+        isSpecial: true,
+        specialAbility: {
+            name: 'Adhesive',
+            namePt: 'Adesivo',
+            description: 'Alvo grudado não pode fugir facilmente',
+            effect: 'difficult_escape' // DC 13 para escapar
+        },
+        description: 'Uma criatura capaz de assumir a forma de objetos inanimados. Parecia um baú comum... até abrir a boca cheia de dentes.'
     }
 ];
 

@@ -109,7 +109,7 @@ export const items = [
         damageType: 'slashing',
         attackBonus: 1,
         value: 500,
-        modelPath: '/assets/models/weapon_longsword.glb',
+        modelPath: '/assets/models/weapon_longsword_plus1.glb',
         icon: '⚔️✨',
         image: '/icons/items/weapon_longsword_plus1.png'
     },
@@ -125,7 +125,7 @@ export const items = [
         damageType: 'slashing',
         effect: 'Adiciona 2d6 de dano de fogo',
         value: 5000,
-        modelPath: '/assets/models/weapon_longsword.glb',
+        modelPath: '/assets/models/weapon_flame_tongue.glb',
         icon: '🔥',
         image: '/icons/items/weapon_flame_tongue.png'
     },
@@ -142,7 +142,7 @@ export const items = [
         effect: '+2d6 radiante contra mortos-vivos',
         attackBonus: 2,
         value: 8000,
-        modelPath: '/assets/models/weapon_longsword.glb',
+        modelPath: '/assets/models/weapon_sunblade.glb',
         icon: '☀️',
         image: '/icons/items/weapon_sunblade.png'
     },

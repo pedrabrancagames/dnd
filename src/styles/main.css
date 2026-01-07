@@ -415,6 +415,42 @@ body {
   margin-bottom: var(--spacing-sm);
 }
 
+/* Class Icon Images */
+.class-icon-img {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  border-radius: var(--radius-md);
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+  transition: var(--transition-fast);
+  margin-bottom: var(--spacing-sm);
+}
+
+.class-btn:hover .class-icon-img {
+  transform: scale(1.1);
+  filter: drop-shadow(0 0 12px rgba(255, 215, 0, 0.5));
+}
+
+.class-btn.selected .class-icon-img {
+  filter: drop-shadow(0 0 16px rgba(255, 215, 0, 0.7));
+}
+
+/* Avatar Icon in Map HUD */
+.avatar-icon-img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  border-radius: var(--radius-full);
+}
+
+/* Character Screen Class Icon */
+.char-class-icon-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: var(--radius-lg);
+}
+
 .class-name {
   font-size: var(--font-size-md);
   font-weight: 600;

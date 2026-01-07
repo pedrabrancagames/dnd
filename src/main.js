@@ -498,7 +498,7 @@ function updateMapHUD() {
 
     document.getElementById('player-name').textContent = player.name;
     document.getElementById('player-level').textContent = `Nível ${player.level}`;
-    document.getElementById('player-avatar').textContent = getClassIcon(player.class);
+    document.getElementById('player-avatar').innerHTML = `<img src="${getClassIcon(player.class)}" alt="Classe" class="avatar-icon-img">`;
 }
 
 /**
@@ -1459,7 +1459,7 @@ function updateCharacterScreen() {
     const classDef = getClassDefinition(player.class);
 
     // Info básica
-    document.getElementById('char-class-icon').textContent = getClassIcon(player.class);
+    document.getElementById('char-class-icon').innerHTML = `<img src="${getClassIcon(player.class)}" alt="Classe" class="char-class-icon-img">`;
     document.getElementById('char-name').textContent = player.name;
     document.getElementById('char-class').textContent = classDef?.namePt || player.class;
     document.getElementById('char-level').textContent = `Nível ${player.level} `;

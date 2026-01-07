@@ -235,18 +235,18 @@ export function addXP(xp) {
 }
 
 /**
- * Obtém ícone da classe
+ * Obtém ícone da classe (caminho da imagem)
  * @param {string} playerClass 
  * @returns {string}
  */
 export function getClassIcon(playerClass) {
     const icons = {
-        warrior: '⚔️',
-        mage: '🔮',
-        archer: '🏹',
-        cleric: '✨'
+        warrior: '/icons/class_warrior.png',
+        mage: '/icons/class_mage.png',
+        archer: '/icons/class_archer.png',
+        cleric: '/icons/class_cleric.png'
     };
-    return icons[playerClass] || '⚔️';
+    return icons[playerClass] || icons.warrior;
 }
 
 /**

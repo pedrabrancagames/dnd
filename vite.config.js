@@ -37,6 +37,8 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,mp3,ogg,webp}'],
         // Exclui GLB do precache (muito grandes) - serão cacheados via runtime
         globIgnores: ['**/*.glb', '**/*.gltf'],
+        // Aumenta limite de tamanho para 5MB para permitir ícones PNG grandes
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,

@@ -1383,3 +1383,277 @@ body {
   line-height: 1.5;
   margin: 0;
 }
+
+/* ===== Exploration AR Screen ===== */
+#exploration-ar-screen {
+  background: transparent;
+  position: relative;
+}
+
+#exploration-ar-screen canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+#exploration-hud {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: var(--z-hud);
+}
+
+#exploration-hud>* {
+  pointer-events: auto;
+}
+
+.exploration-instructions {
+  position: absolute;
+  top: var(--spacing-lg);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-surface-glass);
+  backdrop-filter: blur(12px);
+  padding: var(--spacing-md) var(--spacing-xl);
+  border-radius: var(--radius-lg);
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid rgba(255, 215, 0, 0.2);
+  animation: instruction-pulse 2s ease-in-out infinite;
+}
+
+@keyframes instruction-pulse {
+
+  0%,
+  100% {
+    box-shadow: var(--shadow-lg), 0 0 20px rgba(255, 215, 0, 0.1);
+  }
+
+  50% {
+    box-shadow: var(--shadow-lg), 0 0 30px rgba(255, 215, 0, 0.3);
+  }
+}
+
+.instruction-icon {
+  font-size: 2rem;
+  margin-bottom: var(--spacing-xs);
+  animation: icon-float 3s ease-in-out infinite;
+}
+
+@keyframes icon-float {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.exploration-instructions p {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  margin: 0;
+}
+
+#cancel-exploration-btn {
+  position: absolute;
+  top: var(--spacing-md);
+  left: var(--spacing-md);
+  background: rgba(220, 53, 69, 0.8);
+  backdrop-filter: blur(8px);
+  border: none;
+  border-radius: var(--radius-md);
+  color: white;
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+#cancel-exploration-btn:hover {
+  background: rgba(220, 53, 69, 1);
+  transform: scale(1.05);
+}
+
+#exploration-object-info {
+  position: absolute;
+  bottom: var(--spacing-xl);
+  left: 50%;
+  transform: translateX(-50%);
+  transition: var(--transition-normal);
+}
+
+#exploration-object-info.hidden {
+  opacity: 0;
+  transform: translateX(-50%) translateY(20px);
+  pointer-events: none;
+}
+
+.object-info-content {
+  background: var(--color-surface-glass);
+  backdrop-filter: blur(12px);
+  padding: var(--spacing-lg);
+  border-radius: var(--radius-lg);
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+  border: 2px solid var(--color-accent-gold);
+  min-width: 250px;
+  animation: object-found-bounce 0.5s ease-out;
+}
+
+@keyframes object-found-bounce {
+  0% {
+    opacity: 0;
+    transform: scale(0.8) translateY(20px);
+  }
+
+  50% {
+    transform: scale(1.05) translateY(-5px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.object-icon {
+  font-size: 2.5rem;
+  margin-bottom: var(--spacing-sm);
+}
+
+.object-info-content h3 {
+  color: var(--color-accent-gold);
+  font-size: var(--font-size-lg);
+  margin-bottom: var(--spacing-xs);
+}
+
+.object-info-content p {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  margin: 0;
+}
+
+/* Scanning overlay animation */
+.scanning-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to bottom,
+      transparent 0%,
+      transparent 45%,
+      rgba(0, 255, 136, 0.1) 50%,
+      transparent 55%,
+      transparent 100%);
+  animation: scan-line 2s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 2;
+}
+
+@keyframes scan-line {
+  0% {
+    transform: translateY(-100%);
+  }
+
+  100% {
+    transform: translateY(100%);
+  }
+}
+
+/* Dice roll overlay for exploration */
+.exploration-dice-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+  animation: fade-in 0.3s ease-out;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.dice-result-display {
+  font-size: 4rem;
+  color: var(--color-accent-gold);
+  text-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+  margin-bottom: var(--spacing-lg);
+  animation: dice-bounce 0.5s ease-out;
+}
+
+@keyframes dice-bounce {
+  0% {
+    transform: scale(0) rotate(-180deg);
+  }
+
+  50% {
+    transform: scale(1.2) rotate(10deg);
+  }
+
+  100% {
+    transform: scale(1) rotate(0);
+  }
+}
+
+.dice-result-text {
+  font-size: var(--font-size-xl);
+  color: var(--color-text-primary);
+  text-align: center;
+}
+
+.dice-result-text.success {
+  color: var(--color-accent-green);
+}
+
+.dice-result-text.failure {
+  color: var(--color-accent-red);
+}
+
+/* Dice spin animation for rolling */
+@keyframes dice-spin {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+
+  25% {
+    transform: rotate(90deg) scale(1.1);
+  }
+
+  50% {
+    transform: rotate(180deg) scale(1);
+  }
+
+  75% {
+    transform: rotate(270deg) scale(1.1);
+  }
+
+  100% {
+    transform: rotate(360deg) scale(1);
+  }
+}

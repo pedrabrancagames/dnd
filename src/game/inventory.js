@@ -65,13 +65,18 @@ export async function initInventory() {
     }
 }
 
+import { getItemDisplayInfo } from './identification.js';
+
+// ... imports anteriores mantidos ...
+
 /**
  * Adiciona um item ao inventário
  * @param {string} itemId 
  * @param {number} quantity 
+ * @param {Object} metadata - Metadados opcionais (ex: { identified: false })
  * @returns {Promise<boolean>} sucesso
  */
-export async function addItemToInventory(itemId, quantity = 1) {
+export async function addItemToInventory(itemId, quantity = 1, metadata = {}) {
     if (!gameState.player) return false;
 
     // Garante que estruturas existam
@@ -83,9 +88,14 @@ export async function addItemToInventory(itemId, quantity = 1) {
         return false;
     }
 
-    // Verifica se já existe (stackable)
+    // Verifica se já existe (stackable) e se os metadados são compatíveis
     if (item.stackable || item.type === 'consumable') {
-        const existing = gameState.player.inventory.find(i => i.itemId === itemId);
+        const existing = gameState.player.inventory.find(i =>
+            i.itemId === itemId &&
+            // Só agrupa se o estado de identificação for o mesmo
+            (i.identified === metadata.identified)
+        );
+
         if (existing) {
             existing.quantity += quantity;
             // Sync background
@@ -97,11 +107,17 @@ export async function addItemToInventory(itemId, quantity = 1) {
     }
 
     if (gameState.player.id) {
-        const { data, error } = await addToInventoryDB(gameState.player.id, {
+        // Tenta salvar com metadados extras se a coluna existir no DB
+        // Nota: Se o DB não tiver coluna 'metadata' ou 'identified', isso pode ser ignorado pelo backend ou falhar silenciosamente
+        const dbPayload = {
             itemId,
             quantity,
-            equipped: false
-        });
+            equipped: false,
+            // Passamos metadados se o backend suportar, senão controlamos localmente
+            ...metadata
+        };
+
+        const { data, error } = await addToInventoryDB(gameState.player.id, dbPayload);
 
         if (data) {
             gameState.player.inventory.push({
@@ -109,7 +125,8 @@ export async function addItemToInventory(itemId, quantity = 1) {
                 itemId: data.item_id,
                 quantity: data.quantity,
                 equipped: data.equipped,
-                slot: data.slot
+                slot: data.slot,
+                identified: metadata.identified !== undefined ? metadata.identified : true // Default true se não especificado
             });
             return true;
         } else {
@@ -120,7 +137,8 @@ export async function addItemToInventory(itemId, quantity = 1) {
                 id: tempId,
                 itemId: itemId,
                 quantity: quantity,
-                equipped: false
+                equipped: false,
+                identified: metadata.identified !== undefined ? metadata.identified : true
             });
             return true;
         }
@@ -131,7 +149,8 @@ export async function addItemToInventory(itemId, quantity = 1) {
             id: tempId,
             itemId: itemId,
             quantity: quantity,
-            equipped: false
+            equipped: false,
+            identified: metadata.identified !== undefined ? metadata.identified : true
         });
         return true;
     }
@@ -401,10 +420,15 @@ export function getInventory() {
 }
 
 export function getInventoryWithDetails() {
-    return getInventory().map(invItem => ({
-        ...invItem,
-        item: getItemById(invItem.itemId)
-    })).filter(i => i.item !== null);
+    return getInventory().map(invItem => {
+        // Usa a nova função para obter info do item (considera identificação)
+        const displayInfo = getItemDisplayInfo(invItem);
+
+        return {
+            ...invItem,
+            item: displayInfo || getItemById(invItem.itemId) // Fallback seguro
+        };
+    }).filter(i => i.item !== null);
 }
 
 function generateItemInstanceId() {

@@ -27,7 +27,8 @@ export const items = [
         rarity: 'common',
         damage: '1d6',
         damageType: 'slashing',
-        value: 10
+        value: 10,
+        modelPath: '/assets/models/weapon_shortsword.glb'
     },
     {
         id: 'longsword',
@@ -37,7 +38,8 @@ export const items = [
         rarity: 'common',
         damage: '1d8',
         damageType: 'slashing',
-        value: 15
+        value: 15,
+        modelPath: '/assets/models/weapon_longsword.glb'
     },
     {
         id: 'dagger',
@@ -47,7 +49,8 @@ export const items = [
         rarity: 'common',
         damage: '1d4',
         damageType: 'piercing',
-        value: 2
+        value: 2,
+        modelPath: '/assets/models/weapon_dagger.glb'
     },
     {
         id: 'shortbow',
@@ -57,7 +60,8 @@ export const items = [
         rarity: 'common',
         damage: '1d6',
         damageType: 'piercing',
-        value: 25
+        value: 25,
+        modelPath: '/assets/models/weapon_bow.glb'
     },
     {
         id: 'staff',
@@ -67,7 +71,8 @@ export const items = [
         rarity: 'common',
         damage: '1d6',
         damageType: 'bludgeoning',
-        value: 5
+        value: 5,
+        modelPath: '/assets/models/weapon_staff.glb'
     },
     {
         id: 'mace',
@@ -77,7 +82,8 @@ export const items = [
         rarity: 'common',
         damage: '1d6',
         damageType: 'bludgeoning',
-        value: 5
+        value: 5,
+        modelPath: '/assets/models/weapon_mace.glb'
     },
 
     // Armas Mágicas
@@ -90,7 +96,8 @@ export const items = [
         damage: '1d8+1',
         damageType: 'slashing',
         attackBonus: 1,
-        value: 500
+        value: 500,
+        modelPath: '/assets/models/weapon_longsword.glb'
     },
     {
         id: 'flame_tongue',
@@ -103,7 +110,8 @@ export const items = [
         bonusDamageType: 'fire',
         damageType: 'slashing',
         effect: 'Adiciona 2d6 de dano de fogo',
-        value: 5000
+        value: 5000,
+        modelPath: '/assets/models/weapon_longsword.glb'
     },
     {
         id: 'sunblade',
@@ -117,7 +125,8 @@ export const items = [
         damageType: 'radiant',
         effect: '+2d6 radiante contra mortos-vivos',
         attackBonus: 2,
-        value: 8000
+        value: 8000,
+        modelPath: '/assets/models/weapon_longsword.glb'
     },
 
     // Armaduras
@@ -168,7 +177,8 @@ export const items = [
         slot: 'offhand',
         rarity: 'common',
         acBonus: 2,
-        value: 10
+        value: 10,
+        modelPath: '/assets/models/shield_basic.glb'
     },
 
     // Acessórios

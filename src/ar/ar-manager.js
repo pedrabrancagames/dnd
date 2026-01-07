@@ -14,12 +14,17 @@ let xrHitTestSource = null;
 let reticle = null;
 let monsterModel = null;
 let monsterMixer = null;
+let weaponModel = null;
+let weaponMixer = null;
 let clock = null;
 let isARActive = false;
 
 // Callbacks
 let onMonsterPlaced = null;
 let onAREnd = null;
+
+// Cache de modelos carregados
+const modelCache = new Map();
 
 /**
  * Verifica se AR está disponível
@@ -154,6 +159,169 @@ export async function loadMonsterModel(modelPath = '/assets/models/monster.glb')
 }
 
 /**
+ * Carrega o modelo GLB de uma arma
+ * @param {string} modelPath - Caminho para o arquivo GLB da arma
+ * @returns {Promise<THREE.Group>}
+ */
+export async function loadWeaponModel(modelPath) {
+    if (!modelPath) {
+        console.log('⚔️ Nenhum modelo de arma especificado');
+        return null;
+    }
+
+    console.log('⚔️ Carregando modelo de arma:', modelPath);
+
+    // Verifica cache
+    if (modelCache.has(modelPath)) {
+        console.log('✅ Modelo de arma carregado do cache');
+        const cachedModel = modelCache.get(modelPath).clone();
+        return cachedModel;
+    }
+
+    return new Promise((resolve, reject) => {
+        const loader = new GLTFLoader();
+
+        loader.load(
+            modelPath,
+            (gltf) => {
+                console.log('✅ Modelo de arma carregado!');
+                const model = gltf.scene;
+
+                // Escala menor para armas (na mão do jogador)
+                model.scale.set(0.15, 0.15, 0.15);
+
+                // Configura sombras
+                model.traverse((child) => {
+                    if (child.isMesh) {
+                        child.castShadow = true;
+                        child.receiveShadow = false;
+                    }
+                });
+
+                // Salva no cache
+                modelCache.set(modelPath, model.clone());
+
+                // Configura animações se houver
+                if (gltf.animations && gltf.animations.length > 0) {
+                    weaponMixer = new THREE.AnimationMixer(model);
+                    const action = weaponMixer.clipAction(gltf.animations[0]);
+                    action.play();
+                }
+
+                weaponModel = model;
+                resolve(model);
+            },
+            (progress) => {
+                if (progress.total > 0) {
+                    console.log('⏳ Carregando arma:', (progress.loaded / progress.total * 100).toFixed(0) + '%');
+                }
+            },
+            (error) => {
+                console.error('❌ Erro ao carregar modelo de arma:', error);
+                resolve(null);
+            }
+        );
+    });
+}
+
+/**
+ * Exibe a arma equipada na tela AR (canto inferior)
+ * @param {string} modelPath - Caminho para o modelo da arma
+ */
+export async function showEquippedWeapon(modelPath) {
+    if (!scene || !camera) return;
+
+    // Remove arma anterior se existir
+    const existingWeapon = scene.getObjectByName('equipped-weapon');
+    if (existingWeapon) {
+        scene.remove(existingWeapon);
+    }
+
+    if (!modelPath) return;
+
+    const weapon = await loadWeaponModel(modelPath);
+    if (!weapon) return;
+
+    weapon.name = 'equipped-weapon';
+
+    // Posiciona a arma no canto inferior direito da visão
+    // A posição será atualizada no renderFrame para seguir a câmera
+    scene.add(weapon);
+
+    console.log('⚔️ Arma equipada exibida na tela');
+}
+
+/**
+ * Atualiza a posição da arma equipada para seguir a câmera
+ */
+function updateWeaponPosition() {
+    const weapon = scene?.getObjectByName('equipped-weapon');
+    if (!weapon || !camera) return;
+
+    // Posiciona a arma na frente e abaixo da câmera (simulando estar na mão)
+    const cameraDirection = new THREE.Vector3();
+    camera.getWorldDirection(cameraDirection);
+
+    const cameraPosition = new THREE.Vector3();
+    camera.getWorldPosition(cameraPosition);
+
+    // Offset para parecer que está na mão direita do jogador
+    const rightOffset = new THREE.Vector3();
+    rightOffset.crossVectors(cameraDirection, new THREE.Vector3(0, 1, 0)).normalize();
+
+    weapon.position.copy(cameraPosition)
+        .add(cameraDirection.multiplyScalar(0.3)) // À frente
+        .add(rightOffset.multiplyScalar(0.15))    // À direita
+        .add(new THREE.Vector3(0, -0.15, 0));     // Abaixo
+
+    // Rotaciona para apontar na direção da câmera
+    weapon.lookAt(
+        weapon.position.x + cameraDirection.x,
+        weapon.position.y,
+        weapon.position.z + cameraDirection.z
+    );
+    weapon.rotation.z = Math.PI / 4; // Inclina levemente
+}
+
+/**
+ * Anima a arma ao atacar
+ */
+export function animateWeaponAttack() {
+    const weapon = scene?.getObjectByName('equipped-weapon');
+    if (!weapon) return;
+
+    const originalRotation = weapon.rotation.z;
+    const originalScale = weapon.scale.clone();
+
+    // Animação de swing
+    let progress = 0;
+    const duration = 300; // ms
+    const startTime = performance.now();
+
+    function animate() {
+        const elapsed = performance.now() - startTime;
+        progress = Math.min(elapsed / duration, 1);
+
+        // Swing arc (vai e volta)
+        const swing = Math.sin(progress * Math.PI) * 0.8;
+        weapon.rotation.z = originalRotation - swing;
+
+        // Leve aumento de escala no impacto
+        const scaleBoost = 1 + Math.sin(progress * Math.PI) * 0.2;
+        weapon.scale.copy(originalScale).multiplyScalar(scaleBoost);
+
+        if (progress < 1) {
+            requestAnimationFrame(animate);
+        } else {
+            weapon.rotation.z = originalRotation;
+            weapon.scale.copy(originalScale);
+        }
+    }
+
+    animate();
+}
+
+/**
  * Inicia a sessão AR
  * @param {Object} options
  * @param {string} options.monsterId - ID do template do monstro (ex: 'goblin')
@@ -261,6 +429,9 @@ function renderFrame(time, frame) {
     if (monsterMixer) {
         monsterMixer.update(delta);
     }
+    if (weaponMixer) {
+        weaponMixer.update(delta);
+    }
 
     // Hit test para posicionar o reticle
     if (xrHitTestSource) {
@@ -298,6 +469,9 @@ function renderFrame(time, frame) {
         camera.getWorldPosition(cameraPosition);
         monster.lookAt(cameraPosition.x, monster.position.y, cameraPosition.z);
     }
+
+    // Atualiza a posição da arma equipada
+    updateWeaponPosition();
 
     // Renderiza
     renderer.render(scene, camera);
@@ -400,6 +574,8 @@ export async function endARSession() {
     isARActive = false;
     monsterModel = null;
     monsterMixer = null;
+    weaponModel = null;
+    weaponMixer = null;
 }
 
 /**

@@ -15,7 +15,7 @@ import { gameState, setPlayer, setScreen, startCombat, endCombat, getClassIcon, 
 import { playerAttack, monsterAttack, isMonsterDefeated, isPlayerDefeated, castDamageSpell, useHealingPotion, attemptFlee, playerDodge } from './game/combat.js';
 import { generateExplorationEvent, resolveEvent } from './game/exploration.js';
 import { generateLoot, getRarityColor, getItemById } from './data/items.js';
-import { startARSession, endARSession, showMonsterDamageEffect, showMonsterDeathEffect, isARSessionActive } from './ar/ar-manager.js';
+import { startARSession, endARSession, showMonsterDamageEffect, showMonsterDeathEffect, isARSessionActive, showEquippedWeapon, animateWeaponAttack } from './ar/ar-manager.js';
 import { startExplorationAR, endExplorationAR, isExplorationARSupported, showSuccessEffect, showFailureEffect } from './ar/ar-exploration.js';
 import { grantXP, getXPProgress, getXPForLevel, getTotalXPForLevel, spendAttributePoint } from './game/progression.js';
 import { getClassDefinition, useClassAbility, getAbilityCooldownRemaining } from './game/classes.js';
@@ -622,8 +622,15 @@ async function startARCombat() {
     // Tenta iniciar sessão AR (opcional, o combate funciona sem ela)
     const arStarted = await startARSession({
         monsterId: gameState.currentMonster?.templateId,
-        onPlaced: () => {
+        onPlaced: async () => {
             console.log('✅ Monstro posicionado em AR');
+
+            // Carrega e exibe a arma equipada do jogador
+            const equippedWeapon = getEquippedItem('weapon');
+            if (equippedWeapon?.modelPath) {
+                console.log('⚔️ Carregando arma equipada:', equippedWeapon.namePt);
+                await showEquippedWeapon(equippedWeapon.modelPath);
+            }
         },
         onEnd: () => {
             console.log('ℹ️ Sessão AR encerrada - combate continua em modo 2D');
@@ -812,6 +819,7 @@ function processAttackResult(result) {
     if (result.hit) {
         showDamagePopup(result.damage, result.isCritical ? 'critical' : 'fire', result.isCritical);
         showMonsterDamageEffect(result.damage, result.isCritical);
+        animateWeaponAttack(); // Anima a arma 3D
         if (result.isCritical) {
             showARMessage('CRÍTICO! Dano dobrado!');
         } else {

@@ -430,8 +430,17 @@ function placeMonster(hitMatrix) {
     // Adiciona o modelo na posição do hit test
     monsterModel.name = 'monster';
     monsterModel.position.setFromMatrixPosition(hitMatrix);
+
+    // Força a escala correta aqui também, caso tenha sido perdida
+    monsterModel.scale.set(3.0, 3.0, 3.0);
+
     monsterModel.updateMatrix();
     scene.add(monsterModel);
+
+    // Garante que o monstro olhe para a câmera ao aparecer
+    const cameraPos = new THREE.Vector3();
+    camera.getWorldPosition(cameraPos);
+    monsterModel.lookAt(cameraPos.x, monsterModel.position.y, cameraPos.z);
 
     // Esconde o reticle
     reticle.visible = false;
@@ -585,23 +594,32 @@ export async function endARSession() {
         xrSession = null;
     }
 
-    // Limpa a cena
-    if (scene) {
-        while (scene.children.length > 0) {
-            scene.remove(scene.children[0]);
+    // Limpeza profunda para evitar problemas de contexto na próxima sessão (monstro preto)
+    if (renderer) {
+        const arScreen = document.getElementById('ar-screen');
+        if (arScreen && renderer.domElement && renderer.domElement.parentNode === arScreen) {
+            arScreen.removeChild(renderer.domElement);
         }
+
+        try {
+            renderer.dispose();
+            renderer.forceContextLoss();
+        } catch (e) {
+            console.error('Erro ao limpar renderizador:', e);
+        }
+        renderer = null;
     }
 
-    // Remove o canvas
-    if (renderer?.domElement) {
-        renderer.domElement.remove();
-    }
+    scene = null;
+    camera = null;
 
-    isARActive = false;
+    // Limpa modelos para forçar recarregamento limpo
     monsterModel = null;
     monsterMixer = null;
     weaponModel = null;
     weaponMixer = null;
+
+    isARActive = false;
 }
 
 /**

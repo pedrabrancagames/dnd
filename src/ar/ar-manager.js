@@ -73,15 +73,19 @@ function initScene() {
     camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
 
     // Luzes
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    // Luzes - Configuração forte para evitar modelos pretos
+    const ambientLight = new THREE.AmbientLight(0xffffff, 2.0); // Aumentado drasticamente
     scene.add(ambientLight);
 
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight.position.set(0, 10, 5);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
+    directionalLight.position.set(2, 5, 2); // Mais de frente/topo
     directionalLight.castShadow = true;
-    directionalLight.shadow.mapSize.width = 1024;
-    directionalLight.shadow.mapSize.height = 1024;
     scene.add(directionalLight);
+
+    // Luz extra vindo da "câmera" do jogador
+    const cameraLight = new THREE.DirectionalLight(0xffeedd, 1.0);
+    cameraLight.position.set(0, 0, 0); // Na origem (perto da camera inicialmente)
+    scene.add(cameraLight);
 
     // Reticle (indicador de posicionamento)
     const reticleGeometry = new THREE.RingGeometry(0.1, 0.12, 32);
@@ -121,13 +125,24 @@ export async function loadMonsterModel(modelPath = '/assets/models/monster.glb')
                 const model = gltf.scene;
 
                 // Escala o modelo
-                model.scale.set(1.0, 1.0, 1.0);
+                // Escala o modelo - AUMENTADA DRASTICAMENTE
+                model.scale.set(3.0, 3.0, 3.0); // 3x maior para garantir visibilidade
 
-                // Configura sombras
+                // Configura sombras e MATERIAIS para evitar preto
                 model.traverse((child) => {
                     if (child.isMesh) {
                         child.castShadow = true;
                         child.receiveShadow = true;
+
+                        // Ajuste de material para garantir visibilidade sem envMap
+                        if (child.material) {
+                            // Se for muito metálico sem envMap, fica preto. Reduz metalness.
+                            if (child.material.metalness > 0.5) child.material.metalness = 0.2;
+                            // Aumenta roughness para espalhar luz
+                            if (child.material.roughness < 0.5) child.material.roughness = 0.6;
+                            // Garante emissive nulo para não brilhar cor estranha, ou leve brilho se precisar
+                            child.material.needsUpdate = true;
+                        }
                     }
                 });
 

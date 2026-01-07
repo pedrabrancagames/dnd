@@ -1,6 +1,8 @@
 /**
  * AR Manager - Gerencia sessão WebXR e renderização Three.js
+ * VERSÃO: 2026-01-07-v3 (escala 10x container)
  */
+console.log('🎮 AR Manager carregado - VERSÃO 2026-01-07-v3 (escala 10x)');
 
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';

@@ -708,9 +708,36 @@ body {
   font-size: 1.5rem;
 }
 
+.action-icon-img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+  transition: var(--transition-fast);
+}
+
+.action-btn:hover .action-icon-img {
+  filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.6));
+  transform: scale(1.1);
+}
+
 .action-name {
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
+}
+
+/* Map Button Icons */
+.map-btn-icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+  transition: var(--transition-fast);
+}
+
+.map-btn:hover .map-btn-icon {
+  filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.6));
+  transform: scale(1.1);
 }
 
 /* Damage Popups */

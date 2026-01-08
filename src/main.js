@@ -211,6 +211,12 @@ function handlePOIInteraction(poi) {
     else if (poi.type === 'clue') {
         // Inicia exploração AR para encontrar objeto
         // TODO: Permitir escolher modelo no Admin. Por enquanto usa 'magic_glyph' ou 'ancient_chest'
+        // Troca de tela manual para garantir visibilidade do AR
+        const mapScreen = document.getElementById('map-screen');
+        const arScreen = document.getElementById('exploration-ar-screen');
+        if (mapScreen) mapScreen.classList.remove('active');
+        if (arScreen) arScreen.classList.add('active');
+
         startExplorationAR({
             event: { id: 'magic_glyph', name: poi.name },
             onFound: () => showARMessage('Objeto localizado! Toque para investigar.'),
@@ -226,6 +232,7 @@ function handlePOIInteraction(poi) {
             },
             onEnd: () => {
                 console.log('Exploração AR encerrada');
+                if (arScreen) arScreen.classList.remove('active');
                 goToMap();
             }
         });

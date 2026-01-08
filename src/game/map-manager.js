@@ -1,4 +1,6 @@
 
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import geofenceManager from '../lib/geofence.js';
 import { getLastPosition, onPositionChange, getDistance } from '../lib/gps.js';
 

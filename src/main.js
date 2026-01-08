@@ -17,7 +17,7 @@ import { gameState, setPlayer, setScreen, startCombat, endCombat, getClassIcon, 
 import { playerAttack, monsterAttack, isMonsterDefeated, isPlayerDefeated, castDamageSpell, useHealingPotion, attemptFlee, playerDodge } from './game/combat.js';
 import { generateExplorationEvent, resolveEvent } from './game/exploration.js';
 import { generateLoot, getRarityColor, getItemById } from './data/items.js';
-import { startARSession, endARSession, showMonsterDamageEffect, showMonsterDeathEffect, isARSessionActive, showEquippedWeapon, animateWeaponAttack } from './ar/ar-manager.js';
+import { startARSession, endARSession, showMonsterDamageEffect, showMonsterDeathEffect, isARSessionActive, showEquippedWeapon, animateWeaponAttack, showARMessage } from './ar/ar-manager.js';
 import { startExplorationAR, endExplorationAR, isExplorationARSupported, isExplorationARActive, showSuccessEffect, showFailureEffect } from './ar/ar-exploration.js';
 import { grantXP, getXPProgress, getXPForLevel, getTotalXPForLevel, spendAttributePoint } from './game/progression.js';
 import { getClassDefinition, useClassAbility, getAbilityCooldownRemaining } from './game/classes.js';
@@ -210,7 +210,25 @@ function handlePOIInteraction(poi) {
     }
     else if (poi.type === 'clue') {
         // Inicia exploração AR para encontrar objeto
-        startExplorationAR();
+        // TODO: Permitir escolher modelo no Admin. Por enquanto usa 'magic_glyph' ou 'ancient_chest'
+        startExplorationAR({
+            event: { id: 'magic_glyph', name: poi.name },
+            onFound: () => showARMessage('Objeto localizado! Toque para investigar.'),
+            onClick: () => {
+                showSuccessEffect();
+                setTimeout(() => {
+                    alert(`🔎 Você investigou ${poi.name} e encontrou pistas interessantes!`);
+                    completePOI(poi.id, 'clue');
+                    updateProgressUI();
+                    updatePOIVisualState(poi.id);
+                    endExplorationAR(); // Fecha AR após sucesso
+                }, 1000);
+            },
+            onEnd: () => {
+                console.log('Exploração AR encerrada');
+                goToMap();
+            }
+        });
     }
     else if (poi.type === 'combat' || poi.type === 'boss') {
         // Inicia combate real!

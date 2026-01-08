@@ -915,3 +915,287 @@ CREATE INDEX idx_pois_location ON campaign_pois USING GIST (
 - **[OpenStreetMap](https://www.openstreetmap.org/)** - Tiles gratuitos
 - **[Turf.js](https://turfjs.org/)** - Cálculos geográficos avançados
 - **Web Vibration API** - Feedback háptico nativo
+
+---
+
+## 9. Análise de Compatibilidade: Vercel + Supabase Free Tier
+
+### 9.1 Resumo dos Limites Gratuitos
+
+#### 🔵 Vercel Hobby (Free)
+
+| Recurso | Limite Gratuito | Uso Estimado do Plano |
+|---------|-----------------|----------------------|
+| **Projetos** | 200 projetos | 1 projeto ✅ |
+| **Deployments/dia** | 100 por dia | ~5 por dia ✅ |
+| **Bandwidth** | 100 GB/mês | ~5-10 GB/mês ✅ |
+| **Edge Requests** | 1 milhão/mês | ~100k/mês ✅ |
+| **Serverless Functions** | 1 milhão invocações/mês | ~50k/mês ✅ |
+| **CPU Time (Functions)** | 4 horas/mês | ~1-2 horas/mês ✅ |
+| **Static Files** | 100 MB max | ~30 MB (3D models) ✅ |
+| **Build Time** | 100 horas/mês | ~5 horas/mês ✅ |
+| **Cron Jobs** | 2 crons | 1-2 (reset diário) ✅ |
+
+#### 🟢 Supabase Free
+
+| Recurso | Limite Gratuito | Uso Estimado do Plano |
+|---------|-----------------|----------------------|
+| **Database Storage** | 500 MB | ~50-100 MB ✅ |
+| **File Storage** | 1 GB | ~200 MB ✅ |
+| **Monthly Active Users** | 50.000 MAU | ~50-500 usuários ✅ |
+| **Edge Functions** | 500k invocações/mês | ~10k/mês ✅ |
+| **Edge Functions/dia** | 1.000/dia | ~100-500/dia ✅ |
+| **API Requests** | ∞ (ilimitado) | ✅ |
+| **Projetos Ativos** | 2 projetos | 1 projeto ✅ |
+| **Egress** | 5 GB/mês | ~1-2 GB/mês ✅ |
+| **Database Egress/dia** | 50 MB/dia | ~5-10 MB/dia ✅ |
+
+### 9.2 Análise por Funcionalidade do Plano
+
+#### ✅ **Campanhas e Mini-Aventuras** - COMPATÍVEL
+
+| Aspecto | Impacto | Compatibilidade |
+|---------|---------|-----------------|
+| Armazenar campanhas | ~5 KB por campanha | ✅ Cabe em 500 MB |
+| Armazenar mini-aventuras | ~2 KB por aventura | ✅ Cabe em 500 MB |
+| Progresso dos jogadores | ~500 bytes por jogador/campanha | ✅ OK |
+| NPCs e diálogos | ~10 KB total JSON | ✅ Armazenar no código |
+
+**Estimativa para 10 campanhas + 50 aventuras + 100 jogadores:**
+- Dados estruturados: ~500 KB
+- **Uso: ~0.1% do limite de 500 MB** ✅
+
+---
+
+#### ✅ **Sistema de POIs Geo-localizados** - COMPATÍVEL COM OTIMIZAÇÕES
+
+| Aspecto | Impacto | Compatibilidade |
+|---------|---------|-----------------|
+| POIs por campanha | ~20-50 POIs x 200 bytes | ✅ ~10 KB por campanha |
+| Progresso jogador/POI | ~100 bytes por registro | ✅ OK |
+| Histórico de visitas | ⚠️ Pode crescer rápido | ⚠️ Requer limpeza |
+
+**⚠️ ALERTA: Tabela `poi_visits` (histórico)**
+
+Esta tabela pode crescer indefinidamente. Para 100 jogadores fazendo 20 visitas/dia:
+- 100 × 20 × 30 dias = **60.000 registros/mês**
+- ~60 bytes por registro = **3.6 MB/mês**
+
+**Recomendação:** Implementar limpeza automática de registros antigos (manter apenas 30 dias).
+
+```sql
+-- Limpeza automática com Cron Job
+DELETE FROM poi_visits WHERE visited_at < NOW() - INTERVAL '30 days';
+```
+
+---
+
+#### ✅ **Mapa Interativo (Leaflet.js)** - COMPATÍVEL
+
+| Aspecto | Impacto | Compatibilidade |
+|---------|---------|-----------------|
+| Leaflet.js library | ~40 KB gzip | ✅ Incluso nos 100 GB |
+| OpenStreetMap tiles | Carregados do OSM | ✅ Não conta no bandwidth |
+| Cálculos de distância | Client-side (JavaScript) | ✅ Zero custo server |
+
+**Nota:** OpenStreetMap tiles são gratuitos e carregados diretamente do CDN do OSM, não contam no bandwidth da Vercel.
+
+---
+
+#### ⚠️ **Notificações de Proximidade (Geofencing)** - ATENÇÃO
+
+| Aspecto | Impacto | Compatibilidade |
+|---------|---------|-----------------|
+| Verificação local | Client-side GPS | ✅ Zero custo server |
+| Sincronização com DB | A cada POI visitado | ⚠️ Otimizar frequência |
+
+**Problema potencial:** Se o app sincronizar a cada segundo com o servidor, isso pode explodir os limites.
+
+**Solução implementada no plano:**
+```javascript
+// Sincronizar apenas quando:
+// 1. Jogador ENTRA em um POI
+// 2. Jogador COMPLETA um objetivo
+// NÃO sincronizar a cada update de GPS!
+
+const SYNC_STRATEGY = {
+    onPOIEnter: true,      // Sync ao entrar
+    onPOIComplete: true,   // Sync ao completar
+    periodicSync: 300000,  // Sync a cada 5 min (backup)
+};
+```
+
+---
+
+#### ✅ **AR Exploration** - COMPATÍVEL
+
+| Aspecto | Impacto | Compatibilidade |
+|---------|---------|-----------------|
+| Modelos 3D | Já no projeto (GLB) | ✅ Já otimizado |
+| WebXR | 100% client-side | ✅ Zero custo server |
+| Objetos AR por POI | Referência no JSON | ✅ ~50 bytes |
+
+---
+
+#### ✅ **Sistema de Navegação** - COMPATÍVEL
+
+| Aspecto | Impacto | Compatibilidade |
+|---------|---------|-----------------|
+| Cálculo de direção | Client-side | ✅ Zero custo |
+| Haversine formula | JavaScript local | ✅ Zero custo |
+| UI de navegação | HTML/CSS local | ✅ Zero custo |
+
+---
+
+### 9.3 Pontos Críticos e Mitigações
+
+#### 🔴 Risco 1: Crescimento da Tabela de Visitas
+
+**Problema:** `poi_visits` pode crescer sem limite, esgotando os 500 MB.
+
+**Mitigação:**
+```sql
+-- Política de retenção: apenas 30 dias
+CREATE OR REPLACE FUNCTION cleanup_old_visits()
+RETURNS void AS $$
+BEGIN
+    DELETE FROM poi_visits WHERE visited_at < NOW() - INTERVAL '30 days';
+END;
+$$ LANGUAGE plpgsql;
+
+-- Ou usar particionamento por data (mais avançado)
+```
+
+---
+
+#### 🟡 Risco 2: Muitas Requisições de Sincronização
+
+**Problema:** App sincronizando demais pode esgotar limite de egress (50 MB/dia).
+
+**Mitigação:**
+```javascript
+// Estratégia de batching
+const syncQueue = [];
+const BATCH_SIZE = 10;
+const BATCH_INTERVAL = 60000; // 1 minuto
+
+function queueSync(event) {
+    syncQueue.push(event);
+    if (syncQueue.length >= BATCH_SIZE) {
+        flushSync();
+    }
+}
+
+setInterval(flushSync, BATCH_INTERVAL);
+```
+
+---
+
+#### 🟡 Risco 3: Pausa do Projeto Supabase
+
+**Problema:** Projetos gratuitos pausam após 1 semana de inatividade.
+
+**Mitigação:**
+- Implementar um "heartbeat" que acessa o DB periodicamente
+- Usar Vercel Cron para ping diário
+
+```javascript
+// api/heartbeat.js (Vercel Cron)
+export default async function handler(req, res) {
+    // Simples SELECT para manter projeto ativo
+    await supabase.from('campaigns').select('id').limit(1);
+    res.status(200).json({ status: 'alive' });
+}
+
+// vercel.json
+{
+    "crons": [{
+        "path": "/api/heartbeat",
+        "schedule": "0 0 * * *" // Diário à meia-noite
+    }]
+}
+```
+
+---
+
+### 9.4 Estimativa de Uso para Diferentes Escalas
+
+#### 📊 Cenário A: Grupo Pequeno (10 jogadores)
+
+| Métrica | Uso Mensal | % do Limite |
+|---------|------------|-------------|
+| DB Storage | ~5 MB | 1% |
+| File Storage | ~200 MB | 20% |
+| API Requests | ~10.000 | 0% (∞) |
+| Bandwidth | ~2 GB | 2% |
+| MAU | 10 | 0.02% |
+
+**Veredicto:** ✅ **TOTALMENTE COMPATÍVEL**
+
+---
+
+#### 📊 Cenário B: Comunidade Média (100 jogadores)
+
+| Métrica | Uso Mensal | % do Limite |
+|---------|------------|-------------|
+| DB Storage | ~50 MB | 10% |
+| File Storage | ~300 MB | 30% |
+| API Requests | ~100.000 | 0% (∞) |
+| Bandwidth | ~10 GB | 10% |
+| MAU | 100 | 0.2% |
+
+**Veredicto:** ✅ **COMPATÍVEL**
+
+---
+
+#### 📊 Cenário C: Comunidade Grande (1.000 jogadores)
+
+| Métrica | Uso Mensal | % do Limite |
+|---------|------------|-------------|
+| DB Storage | ~200 MB | 40% |
+| File Storage | ~500 MB | 50% |
+| API Requests | ~1.000.000 | 0% (∞) |
+| Bandwidth | ~50 GB | 50% |
+| MAU | 1.000 | 2% |
+
+**Veredicto:** ⚠️ **COMPATÍVEL COM OTIMIZAÇÕES**
+- Implementar limpeza de dados antigos
+- Usar cache agressivo
+- Considerar upgrade se crescer mais
+
+---
+
+### 9.5 Recomendações Finais
+
+#### ✅ Já Compatível (pode implementar agora)
+1. Sistema de campanhas e mini-aventuras
+2. POIs geo-localizados com mapa
+3. Integração AR nos POIs
+4. Sistema de navegação
+5. Progressão individual e global
+
+#### ⚠️ Requer Otimização (implementar com cuidado)
+1. **Histórico de visitas** → Limpeza automática a cada 30 dias
+2. **Sincronização** → Batch updates, não real-time
+3. **Heartbeat** → Cron job para evitar pausa do Supabase
+
+#### 💡 Boas Práticas para Free Tier
+1. **Armazenar dados estáticos no código** (campanhas, aventuras, NPCs)
+2. **Usar localStorage** para cache de dados frequentes
+3. **Comprimir assets** (GLB, imagens)
+4. **Lazy loading** de recursos pesados
+5. **Evitar polling** - usar eventos quando possível
+
+---
+
+### 9.6 Conclusão
+
+| Aspecto | Status |
+|---------|--------|
+| **Vercel Free** | ✅ COMPATÍVEL |
+| **Supabase Free** | ✅ COMPATÍVEL |
+| **Escala até ~500 usuários** | ✅ SEM PROBLEMAS |
+| **Escala até ~1000 usuários** | ⚠️ REQUER OTIMIZAÇÕES |
+| **Escala acima de 1000** | ❌ CONSIDERAR UPGRADE |
+
+**O plano é 100% viável nos planos gratuitos** para o uso proposto (grupo de jogadores explorando o bairro). As otimizações sugeridas garantem que o sistema funcione bem mesmo com crescimento moderado.

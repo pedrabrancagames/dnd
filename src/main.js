@@ -930,22 +930,7 @@ function showDamagePopup(damage, type = 'normal', isCritical = false) {
     setTimeout(() => popup.remove(), 1000);
 }
 
-/**
- * Mostra mensagem no AR
- * @param {string} message 
- */
-function showARMessage(message) {
-    const container = document.getElementById('ar-messages');
-    if (!container) return;
 
-    const msg = document.createElement('div');
-    msg.className = 'ar-message';
-    msg.textContent = message;
-
-    container.appendChild(msg);
-
-    setTimeout(() => msg.remove(), 1500);
-}
 
 /**
  * Executa turno do monstro (após ação do jogador)

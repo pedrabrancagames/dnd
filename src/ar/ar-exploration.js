@@ -187,6 +187,21 @@ function initExplorationScene() {
         arScreen.insertBefore(renderer.domElement, arScreen.firstChild);
     }
 
+    // Fix estilos AR
+    if (!document.getElementById('ar-fixes')) {
+        const style = document.createElement('style');
+        style.id = 'ar-fixes';
+        style.textContent = `
+            #exploration-ar-screen { background: transparent !important; }
+            #exploration-ar-screen canvas { position: absolute; top: 0; left: 0; z-index: 0; }
+            #exploration-hud { position: relative; z-index: 10; pointer-events: none; }
+            #exploration-hud * { pointer-events: auto; }
+            body.ar-active { background: transparent !important; }
+            html.ar-active { background: transparent !important; }
+        `;
+        document.head.appendChild(style);
+    }
+
     // Scene
     scene = new THREE.Scene();
 
@@ -766,11 +781,19 @@ export async function startExplorationAR({ event, onFound, onClick, onEnd } = {}
         const viewerSpace = await xrSession.requestReferenceSpace('viewer');
         xrHitTestSource = await xrSession.requestHitTestSource({ space: viewerSpace });
 
+        // Ativa modo transparente
+        document.body.classList.add('ar-active');
+        document.documentElement.classList.add('ar-active');
+
         // Handle session end
         xrSession.addEventListener('end', () => {
             explorationARActive = false;
             xrSession = null;
             xrHitTestSource = null;
+
+            document.body.classList.remove('ar-active');
+            document.documentElement.classList.remove('ar-active');
+
             if (onExplorationEnd) onExplorationEnd();
         });
 

@@ -168,13 +168,18 @@ function initExplorationScene() {
     // Renderer
     renderer = new THREE.WebGLRenderer({
         antialias: true,
-        alpha: true
+        alpha: true,
+        premultipliedAlpha: false
     });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.xr.enabled = true;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    
+    // CRUCIAL: Fundo transparente para ver a câmera AR
+    renderer.setClearColor(0x000000, 0);
+    renderer.setClearAlpha(0);
 
     // Adiciona canvas ao AR screen
     const arScreen = document.getElementById('exploration-ar-screen');

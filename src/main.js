@@ -146,6 +146,9 @@ async function handleVictory() {
             .catch(err => console.error("Erro ao salvar kill:", err));
     }
 
+    // Registra kill para a campanha ativa
+    registerCampaignKill(monster);
+
     // Remove do mapa localmente
     const mapRef = getMapInstance();
     const markerIndex = gameState.nearbyMonsters.findIndex(m => m.id === monster.id);

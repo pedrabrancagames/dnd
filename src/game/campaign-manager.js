@@ -124,30 +124,56 @@ export function updateObjective(objectiveId, amount = 1) {
 }
 
 /**
+ * Mapeamento de tipos de monstro para matching
+ */
+const MONSTER_TYPE_MAP = {
+    'Morto-vivo': 'undead',
+    'Besta': 'beast',
+    'Humanoide': 'humanoid',
+    'Dragão': 'dragon',
+    'Gigante': 'giant',
+    'Aberração': 'aberration',
+    'Monstruosidade': 'monstrosity',
+    'Metamorfo': 'shapechanger'
+};
+
+/**
  * Registra uma kill para a campanha
  * @param {Object} monster - Monstro derrotado
  */
 export function registerCampaignKill(monster) {
+    if (!campaignState.currentCampaign) {
+        console.log('[Campaign] Nenhuma campanha ativa para registrar kill');
+        return;
+    }
+
     campaignState.globalProgress.campaignKills++;
 
-    // Verifica se tem objetivo relacionado
+    // Mapeia o tipo do monstro
+    const normalizedType = MONSTER_TYPE_MAP[monster.type] || monster.type?.toLowerCase();
+
+    console.log(`[Campaign] Verificando kill: ${monster.name} (type: ${monster.type} -> ${normalizedType})`);
+
+    // Verifica se tem objetivo relacionado ao tipo
     const killObjective = Object.keys(campaignState.objectives).find(key => {
         const obj = campaignState.objectives[key];
         return obj.type === 'kill' &&
-            (obj.monsterType === monster.type || obj.monsterType === 'any');
+            (obj.monsterType === normalizedType || obj.monsterType === 'any');
     });
 
     if (killObjective) {
+        console.log(`[Campaign] Objetivo encontrado: ${killObjective}`);
         updateObjective(killObjective);
     }
 
-    // Checa por objetivos específicos de monstro
+    // Checa por objetivos específicos de monstro (por ID)
     const specificKill = Object.keys(campaignState.objectives).find(key => {
         const obj = campaignState.objectives[key];
         return obj.type === 'kill' && obj.monsterId === monster.templateId;
     });
 
     if (specificKill) {
+        console.log(`[Campaign] Objetivo específico encontrado: ${specificKill}`);
         updateObjective(specificKill);
     }
 

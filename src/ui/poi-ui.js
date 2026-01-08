@@ -255,20 +255,29 @@ async function startCameraExplorationFallback(poi) {
                 width: 100%;
                 height: 100%;
                 object-fit: cover;
-                z-index: -1;
+                z-index: 1;
+                background: black;
             `;
             video.autoplay = true;
             video.playsInline = true;
-            arScreen.insertBefore(video, arScreen.firstChild);
+            video.muted = true;
+            arScreen.appendChild(video);
         }
 
         video.srcObject = stream;
         await video.play();
 
+        // Garante que o HUD fique sobre o vídeo
+        const hud = document.getElementById('exploration-hud');
+        if (hud) {
+            hud.style.zIndex = '100';
+            hud.style.position = 'relative';
+        }
+
         // Atualiza instruções
         const instructionText = document.getElementById('exploration-instruction-text');
         if (instructionText) {
-            instructionText.textContent = `Procurando... Toque na tela quando encontrar ${poi.name}`;
+            instructionText.textContent = `📍 Toque na tela para investigar ${poi.name}`;
         }
 
         // Handler de toque para investigar

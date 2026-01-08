@@ -1125,9 +1125,11 @@ function showEventModal(event) {
     desc.textContent = event.description;
 
     // Usa imagem se disponível, senão emoji
+    // Usa imagem se disponível, senão emoji
     if (icon) {
-        if (event.image) {
-            icon.innerHTML = `<img src="${event.image}" alt="${event.title}" class="event-icon-img">`;
+        if (event.image && event.image.trim() !== '') {
+            // Cria a imagem com fallback para evitar ícone quebrado
+            icon.innerHTML = `<img src="${event.image}" alt="${event.title}" class="event-icon-img" onerror="this.style.display='none';this.parentElement.textContent='${event.emoji || '📦'}'">`;
         } else {
             icon.textContent = event.emoji || '📦';
         }

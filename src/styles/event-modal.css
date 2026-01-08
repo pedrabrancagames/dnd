@@ -62,7 +62,7 @@
 
 .event-modal h2 {
     color: var(--color-accent-gold);
-    font-size: var(--font-size-xl);
+    font-size: var(--font-size-lg);
     margin-bottom: var(--spacing-sm);
     text-transform: uppercase;
     letter-spacing: 1px;

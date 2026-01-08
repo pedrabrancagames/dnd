@@ -4,7 +4,7 @@
  */
 
 import { gameState } from '../game/state.js';
-import { startExplorationAR, endExplorationAR, showSuccessEffect } from '../ar/ar-exploration.js';
+// NOTE: ar-exploration imports removidos - usando câmera direta para investigação
 import { showARMessage } from '../ar/ar-manager.js';
 import { performRest } from '../game/state.js';
 import {
@@ -86,7 +86,7 @@ export function hidePOINotification() {
 /**
  * Lida com interação em um POI
  */
-export function handlePOIInteraction(poi) {
+export async function handlePOIInteraction(poi) {
     console.log('Interagindo com:', poi.name);
 
     if (poi.type === 'npc') {
@@ -94,31 +94,9 @@ export function handlePOIInteraction(poi) {
         startNPCDialogue(poi);
     }
     else if (poi.type === 'clue') {
-        // Inicia exploração AR para encontrar objeto
-        const mapScreen = document.getElementById('map-screen');
-        const arScreen = document.getElementById('exploration-ar-screen');
-        if (mapScreen) mapScreen.classList.remove('active');
-        if (arScreen) arScreen.classList.add('active');
-
-        startExplorationAR({
-            event: { id: 'magic_glyph', name: poi.name },
-            onFound: () => showARMessage('Objeto localizado! Toque para investigar.'),
-            onClick: () => {
-                showSuccessEffect();
-                setTimeout(() => {
-                    alert(`🔎 Você investigou ${poi.name} e encontrou pistas interessantes!`);
-                    completePOI(poi.id, 'clue');
-                    updateProgressUI();
-                    updatePOIVisualState(poi.id);
-                    endExplorationAR(); // Fecha AR após sucesso
-                }, 1000);
-            },
-            onEnd: () => {
-                console.log('Exploração AR encerrada');
-                if (arScreen) arScreen.classList.remove('active');
-                if (goToMapCallback) goToMapCallback();
-            }
-        });
+        // Usa modo de câmera simples para investigação (mais confiável)
+        console.log('[POI] Iniciando investigação com câmera:', poi.name);
+        startCameraExplorationFallback(poi);
     }
     else if (poi.type === 'combat' || poi.type === 'boss') {
         // Inicia combate real!
@@ -247,3 +225,105 @@ export function setupPOIGlobalInteraction() {
         }
     };
 }
+
+/**
+ * Fallback de exploração com câmera quando WebXR não está disponível
+ * @param {Object} poi - POI sendo investigado
+ */
+async function startCameraExplorationFallback(poi) {
+    const mapScreen = document.getElementById('map-screen');
+    const arScreen = document.getElementById('exploration-ar-screen');
+
+    if (mapScreen) mapScreen.classList.remove('active');
+    if (arScreen) arScreen.classList.add('active');
+
+    // Tenta obter acesso à câmera
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'environment' }
+        });
+
+        // Cria elemento de vídeo para a câmera
+        let video = document.getElementById('camera-fallback-video');
+        if (!video) {
+            video = document.createElement('video');
+            video.id = 'camera-fallback-video';
+            video.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                z-index: -1;
+            `;
+            video.autoplay = true;
+            video.playsInline = true;
+            arScreen.insertBefore(video, arScreen.firstChild);
+        }
+
+        video.srcObject = stream;
+        await video.play();
+
+        // Atualiza instruções
+        const instructionText = document.getElementById('exploration-instruction-text');
+        if (instructionText) {
+            instructionText.textContent = `Procurando... Toque na tela quando encontrar ${poi.name}`;
+        }
+
+        // Handler de toque para investigar
+        const handleTouch = () => {
+            // Para a câmera
+            stream.getTracks().forEach(track => track.stop());
+            video.remove();
+
+            // Mostra resultado
+            alert(`🔎 Você investigou ${poi.name} e encontrou pistas interessantes!`);
+
+            completePOI(poi.id, 'clue');
+            updateProgressUI();
+            updatePOIVisualState(poi.id);
+
+            // Fecha tela AR
+            if (arScreen) arScreen.classList.remove('active');
+            if (goToMapCallback) goToMapCallback();
+
+            arScreen.removeEventListener('click', handleTouch);
+        };
+
+        arScreen.addEventListener('click', handleTouch);
+
+        // Handler de cancelar
+        const cancelBtn = document.getElementById('cancel-exploration-btn');
+        if (cancelBtn) {
+            const handleCancel = () => {
+                stream.getTracks().forEach(track => track.stop());
+                video.remove();
+                if (arScreen) arScreen.classList.remove('active');
+                if (goToMapCallback) goToMapCallback();
+                arScreen.removeEventListener('click', handleTouch);
+                cancelBtn.removeEventListener('click', handleCancel);
+            };
+            cancelBtn.addEventListener('click', handleCancel);
+        }
+
+    } catch (error) {
+        console.error('[POI] Erro ao acessar câmera:', error);
+
+        // Fallback final: apenas mostra o modal de evento
+        if (arScreen) arScreen.classList.remove('active');
+
+        // Mostra diretamente a confirmação
+        const confirmed = confirm(`🔍 Investigar ${poi.name}?\n\n${poi.description || 'Um local misterioso...'}`);
+
+        if (confirmed) {
+            alert(`🔎 Você investigou ${poi.name} e encontrou pistas interessantes!`);
+            completePOI(poi.id, 'clue');
+            updateProgressUI();
+            updatePOIVisualState(poi.id);
+        }
+
+        if (goToMapCallback) goToMapCallback();
+    }
+}
+

@@ -37,11 +37,12 @@ import {
 } from './lib/audio-manager.js';
 
 // Novos módulos de Mapa e Campanha
-import { initMap as initGameMap } from './game/map-manager.js';
+import { initMap as initGameMap, updatePOIVisualState } from './game/map-manager.js';
 import geofenceManager from './lib/geofence.js';
 import { CAMPAIGNS, generateTestPOIs } from './data/campaigns.js';
 import { initAdminPanel, getCustomPOIs, hasCustomPOIs } from './game/admin-poi.js';
 import { startDialogue, createSimpleDialogue, SAMPLE_DIALOGUES } from './game/dialogue-system.js';
+import { initProgress, completePOI, isPOICompleted, updateProgressUI, setTotalPOIsGetter } from './game/campaign-progress.js';
 
 // Estado local
 let monsterMarkers = [];
@@ -229,11 +230,19 @@ function handlePOIInteraction(poi) {
  * Inicia diálogo com NPC
  */
 function startNPCDialogue(poi) {
+    // Callback para marcar como completo após diálogo
+    const onDialogueComplete = () => {
+        completePOI(poi.id, 'npc');
+        updateProgressUI();
+        updatePOIVisualState(poi.id);
+    };
+
     // Verifica se o POI tem um dialogueId configurado
     if (poi.dialogueId && SAMPLE_DIALOGUES[poi.dialogueId]) {
         // Usa diálogo pré-definido
         startDialogue(poi.dialogueId, (dialogue) => {
             console.log('[NPC] Diálogo concluído:', dialogue.id);
+            onDialogueComplete();
         });
     } else if (poi.dialogueText) {
         // Usa texto customizado do POI
@@ -244,6 +253,7 @@ function startNPCDialogue(poi) {
         );
         startDialogue(dialogue, () => {
             console.log('[NPC] Diálogo simples concluído');
+            onDialogueComplete();
         });
     } else {
         // Fallback: diálogo genérico
@@ -254,6 +264,7 @@ function startNPCDialogue(poi) {
         );
         startDialogue(dialogue, () => {
             console.log('[NPC] Diálogo genérico concluído');
+            onDialogueComplete();
         });
     }
 }
@@ -290,6 +301,10 @@ function startPOICombat(poi) {
 
     // Cria instância do monstro
     const monster = createMonsterInstance(monsterTemplate, poi.id);
+
+    // Salva referência ao POI para marcar como completo após vitória
+    monster.poiId = poi.id;
+    monster.poiType = poi.type;
 
     // Se for boss, aumenta HP
     if (poi.type === 'boss') {
@@ -637,7 +652,10 @@ async function initMap() {
     // 2. Inicializa o painel de Admin
     initAdminPanel();
 
-    // 3. Configura POIs (prioriza customizados, senão usa teste)
+    // 3. Inicializa sistema de progresso
+    initProgress();
+
+    // 4. Configura POIs (prioriza customizados, senão usa teste)
     let poisToLoad = [];
     if (hasCustomPOIs()) {
         console.log('📍 Usando POIs customizados do Admin...');
@@ -648,7 +666,11 @@ async function initMap() {
     }
     geofenceManager.loadPOIs(poisToLoad);
 
-    // 3. Registra Listeners de Geofence ANTES de iniciar monitoramento
+    // 5. Configura getter de total de POIs para o progresso
+    setTotalPOIsGetter(() => geofenceManager.activePOIs.length);
+    updateProgressUI();
+
+    // 6. Registra Listeners de Geofence ANTES de iniciar monitoramento
     geofenceManager.onGeofenceEvent((event, poi, distance) => {
         console.log(`[Geofence] Evento: ${event} em ${poi.name} (${Math.round(distance)}m)`);
 
@@ -663,13 +685,13 @@ async function initMap() {
         }
     });
 
-    // 4. Agora inicia o monitoramento (os listeners já estão prontos)
+    // 7. Agora inicia o monitoramento (os listeners já estão prontos)
     geofenceManager.startMonitoring();
 
-    // 5. Inicializa o Mapa Visual
+    // 8. Inicializa o Mapa Visual
     initGameMap();
 
-    // 6. Lógica de monstros aleatórios
+    // 9. Lógica de monstros aleatórios
     startWatching(true);
 
     onPositionChange((coords) => {
@@ -1415,6 +1437,14 @@ async function handleVictory() {
             map.removeLayer(monsterMarkers[markerIndex]);
             monsterMarkers.splice(markerIndex, 1);
         }
+    }
+
+    // Se o monstro estava associado a um POI, marca como completo
+    if (monster.poiId) {
+        console.log(`[Victory] Completando POI de combate: ${monster.poiId}`);
+        completePOI(monster.poiId, monster.poiType || 'combat');
+        updateProgressUI();
+        updatePOIVisualState(monster.poiId);
     }
 
     // Adiciona XP

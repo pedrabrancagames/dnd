@@ -3,6 +3,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import geofenceManager from '../lib/geofence.js';
 import { getLastPosition, onPositionChange, getDistance } from '../lib/gps.js';
+import { isPOICompleted } from './campaign-progress.js';
 
 let map = null;
 let playerMarker = null;
@@ -64,7 +65,7 @@ export function initMap() {
 /**
  * Cria ícone HTML customizado para o Leaflet
  */
-function createCustomIcon(emoji, color) {
+function createCustomIcon(emoji, color, classNameExtra = '') {
     // @ts-ignore
     return L.divIcon({
         html: `<div style="
@@ -79,7 +80,7 @@ function createCustomIcon(emoji, color) {
             box-shadow: 0 0 10px ${color};
             border: 2px solid white;
         ">${emoji}</div>`,
-        className: 'custom-map-marker',
+        className: `custom-map-marker ${classNameExtra}`,
         iconSize: [40, 40],
         iconAnchor: [20, 20]
     });
@@ -146,7 +147,9 @@ export function renderPOIs() {
         }
 
         const color = getPOIColor(poi.type);
-        const icon = createCustomIcon(poi.icon, color);
+        const isCompleted = isPOICompleted(poi.id);
+        const extraClass = isCompleted ? 'poi-completed' : '';
+        const icon = createCustomIcon(poi.icon, color, extraClass);
 
         // Determina o botão de ação baseado no tipo
         const actionButton = getActionButton(poi);
@@ -230,6 +233,51 @@ function updatePOIMarker(poi, isInside) {
             marker.closePopup();
         }
     }
+}
+
+/**
+ * Atualiza o estado visual de um POI (ex: completado)
+ */
+export function updatePOIVisualState(poiId) {
+    const marker = poiMarkers[poiId];
+    if (!marker) return;
+
+    // A forma mais fácil é remover e recriar com a nova classe
+    const poi = geofenceManager.activePOIs.find(p => p.id === poiId);
+    if (!poi) return;
+
+    // Remove marcador antigo
+    map.removeLayer(marker);
+    delete poiMarkers[poiId];
+
+    // Recria marcador (renderPOIs verifica se já existe, então podemos chamar para renderizar so esse se quisermos, 
+    // mas vamos recriar manualmente aqui para ser mais direto)
+
+    const color = getPOIColor(poi.type);
+    const isCompleted = isPOICompleted(poi.id);
+    const extraClass = isCompleted ? 'poi-completed' : '';
+    const icon = createCustomIcon(poi.icon, color, extraClass);
+
+    // Determina o botão de ação baseado no tipo
+    const actionButton = getActionButton(poi);
+
+    const newMarker = L.marker([poi.lat, poi.lng], { icon: icon })
+        .addTo(map)
+        .bindPopup(`
+            <div class="poi-popup">
+                <h3>${poi.icon} ${poi.name}</h3>
+                <p>${poi.description || 'Sem descrição'}</p>
+                <div class="poi-popup-buttons">
+                    ${actionButton}
+                    <button onclick="window.startNavigation('${poi.id}')" class="btn-nav btn-secondary-small">
+                        🧭 Navegar
+                    </button>
+                </div>
+            </div>
+        `);
+
+    poiMarkers[poiId] = newMarker;
+    console.log('[Map] POI visual atualizado:', poiId);
 }
 
 /**

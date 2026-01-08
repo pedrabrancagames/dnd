@@ -1,0 +1,585 @@
+/**
+ * Campaign UI Styles
+ * Estilos para o painel de campanha e aventuras
+ */
+
+/* ============================================
+   PAINEL DE CAMPANHA
+   ============================================ */
+
+.campaign-panel {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--color-bg-primary);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.campaign-panel.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Header */
+.campaign-header {
+    position: relative;
+    padding: 1rem;
+    background: linear-gradient(180deg, 
+        rgba(139, 69, 19, 0.8) 0%, 
+        rgba(139, 69, 19, 0.4) 100%);
+    border-bottom: 2px solid var(--color-accent-gold);
+}
+
+.campaign-header .close-btn {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: rgba(0, 0, 0, 0.5);
+    border: none;
+    color: white;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+
+.campaign-header h2 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+    font-size: 1.3rem;
+    color: var(--color-accent-gold);
+}
+
+.campaign-header h2 .campaign-icon {
+    font-size: 1.5rem;
+}
+
+.campaign-description {
+    margin: 0.5rem 0 0;
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+    line-height: 1.4;
+}
+
+/* Barra de progresso da campanha */
+.campaign-progress-bar {
+    margin-top: 1rem;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 8px;
+    height: 24px;
+    overflow: hidden;
+    position: relative;
+}
+
+.campaign-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, 
+        var(--color-accent-gold) 0%, 
+        #ffd700 50%, 
+        var(--color-accent-gold) 100%);
+    border-radius: 8px;
+    transition: width 0.5s ease;
+    position: relative;
+}
+
+.campaign-progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 50%;
+    background: linear-gradient(180deg, 
+        rgba(255, 255, 255, 0.3) 0%, 
+        transparent 100%);
+}
+
+.campaign-progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-weight: bold;
+    font-size: 0.85rem;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+/* ============================================
+   CAPÍTULO ATUAL
+   ============================================ */
+
+.chapter-section {
+    padding: 1rem;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.chapter-card {
+    background: linear-gradient(135deg, 
+        rgba(74, 42, 99, 0.4) 0%, 
+        rgba(50, 30, 70, 0.6) 100%);
+    border: 1px solid rgba(139, 69, 19, 0.5);
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.chapter-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 0 0.5rem;
+    font-size: 1.1rem;
+    color: var(--color-accent-gold);
+}
+
+.chapter-number {
+    background: var(--color-accent-gold);
+    color: #1a1a2e;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 0.8rem;
+}
+
+.chapter-description {
+    margin: 0 0 1rem;
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+}
+
+/* ============================================
+   OBJETIVOS
+   ============================================ */
+
+.objectives-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.objective-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 0.75rem;
+    border-radius: 8px;
+    border-left: 3px solid var(--color-text-secondary);
+    transition: all 0.3s ease;
+}
+
+.objective-item.complete {
+    border-left-color: #4ade80;
+    background: rgba(74, 222, 128, 0.1);
+}
+
+.objective-checkbox {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--color-text-secondary);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.objective-item.complete .objective-checkbox {
+    background: #4ade80;
+    border-color: #4ade80;
+}
+
+.objective-item.complete .objective-checkbox::after {
+    content: '✓';
+    color: #1a1a2e;
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+.objective-info {
+    flex: 1;
+}
+
+.objective-description {
+    font-size: 0.9rem;
+    margin: 0 0 0.25rem;
+}
+
+.objective-progress {
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+}
+
+.objective-progress .current {
+    color: var(--color-accent-gold);
+    font-weight: bold;
+}
+
+/* ============================================
+   RECOMPENSAS
+   ============================================ */
+
+.rewards-section {
+    padding: 1rem;
+    border-top: 1px solid rgba(139, 69, 19, 0.3);
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.rewards-title {
+    margin: 0 0 0.75rem;
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+}
+
+.rewards-grid {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.reward-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(139, 69, 19, 0.3);
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    border: 1px solid rgba(139, 69, 19, 0.5);
+}
+
+.reward-icon {
+    font-size: 1.2rem;
+}
+
+.reward-value {
+    font-weight: bold;
+    color: var(--color-accent-gold);
+}
+
+/* ============================================
+   MINI-AVENTURA ATIVA
+   ============================================ */
+
+.adventure-panel {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--color-bg-primary);
+    z-index: 110;
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.adventure-panel.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.adventure-header {
+    padding: 1rem;
+    background: linear-gradient(180deg, 
+        rgba(60, 40, 80, 0.9) 0%, 
+        rgba(40, 25, 55, 0.9) 100%);
+    border-bottom: 2px solid var(--color-accent-purple);
+}
+
+.adventure-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+    font-size: 1.2rem;
+}
+
+.adventure-title .emoji {
+    font-size: 1.5rem;
+}
+
+.adventure-progress {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+}
+
+.adventure-step-indicator {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.adventure-step-indicator .step {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.adventure-step-indicator .step.complete {
+    background: #4ade80;
+}
+
+.adventure-step-indicator .step.current {
+    background: var(--color-accent-gold);
+    animation: pulse 1.5s infinite;
+}
+
+/* Conteúdo do passo */
+.adventure-content {
+    flex: 1;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.step-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    animation: float 3s ease-in-out infinite;
+}
+
+.step-description {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    max-width: 400px;
+    margin-bottom: 1.5rem;
+}
+
+.step-hint {
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+    font-style: italic;
+}
+
+/* Opções de escolha */
+.choice-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    width: 100%;
+    max-width: 350px;
+}
+
+.choice-btn {
+    padding: 1rem;
+    background: linear-gradient(135deg, 
+        rgba(74, 42, 99, 0.6) 0%, 
+        rgba(50, 30, 70, 0.8) 100%);
+    border: 2px solid rgba(139, 69, 19, 0.5);
+    border-radius: 12px;
+    color: white;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.choice-btn:hover, .choice-btn:active {
+    background: linear-gradient(135deg, 
+        rgba(94, 52, 119, 0.8) 0%, 
+        rgba(70, 40, 90, 0.9) 100%);
+    border-color: var(--color-accent-gold);
+    transform: translateY(-2px);
+}
+
+/* Skill check */
+.skill-check-display {
+    background: rgba(0, 0, 0, 0.4);
+    padding: 1.5rem;
+    border-radius: 12px;
+    margin-bottom: 1rem;
+}
+
+.skill-check-display .skill-name {
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+}
+
+.skill-check-display .dc-value {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--color-accent-gold);
+    margin: 0.5rem 0;
+}
+
+.roll-btn {
+    padding: 1rem 2rem;
+    background: linear-gradient(135deg, 
+        var(--color-accent-gold) 0%, 
+        #b8860b 100%);
+    border: none;
+    border-radius: 25px;
+    color: #1a1a2e;
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.roll-btn:active {
+    transform: scale(0.95);
+}
+
+/* Resultado do skill check */
+.skill-result {
+    padding: 1.5rem;
+    border-radius: 12px;
+    margin-top: 1rem;
+    text-align: center;
+}
+
+.skill-result.success {
+    background: rgba(74, 222, 128, 0.2);
+    border: 2px solid #4ade80;
+}
+
+.skill-result.failure {
+    background: rgba(248, 113, 113, 0.2);
+    border: 2px solid #f87171;
+}
+
+.skill-result .result-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.skill-result .roll-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin: 0.5rem 0;
+}
+
+/* Footer de aventura */
+.adventure-footer {
+    padding: 1rem;
+    border-top: 1px solid rgba(139, 69, 19, 0.3);
+    display: flex;
+    justify-content: space-between;
+}
+
+.adventure-footer .cancel-btn {
+    padding: 0.75rem 1.25rem;
+    background: rgba(248, 113, 113, 0.2);
+    border: 1px solid #f87171;
+    border-radius: 8px;
+    color: #f87171;
+    cursor: pointer;
+}
+
+.adventure-footer .continue-btn {
+    padding: 0.75rem 1.25rem;
+    background: linear-gradient(135deg, 
+        var(--color-accent-gold) 0%, 
+        #b8860b 100%);
+    border: none;
+    border-radius: 8px;
+    color: #1a1a2e;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+/* ============================================
+   BOTÃO FLUTUANTE DE CAMPANHA
+   ============================================ */
+
+.campaign-fab {
+    position: fixed;
+    bottom: 5rem;
+    left: 1rem;
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, 
+        var(--color-accent-gold) 0%, 
+        #b8860b 100%);
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    z-index: 50;
+    transition: transform 0.3s ease;
+}
+
+.campaign-fab:active {
+    transform: scale(0.9);
+}
+
+.campaign-fab .notification-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 18px;
+    height: 18px;
+    background: #ef4444;
+    border-radius: 50%;
+    font-size: 0.7rem;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+/* ============================================
+   ANIMAÇÕES
+   ============================================ */
+
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+/* ============================================
+   RESPONSIVIDADE
+   ============================================ */
+
+@media (min-width: 768px) {
+    .campaign-panel,
+    .adventure-panel {
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: 90%;
+        max-width: 500px;
+        height: auto;
+        max-height: 80vh;
+        border-radius: 16px;
+        border: 2px solid var(--color-accent-gold);
+    }
+}

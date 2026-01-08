@@ -72,6 +72,11 @@ import {
     setupPOIGlobalInteraction
 } from './ui/poi-ui.js';
 
+// Sistema de Campanhas
+import { initCampaign, registerCampaignKill } from './game/campaign-manager.js';
+import { initWorldState } from './game/world-state.js';
+import { initCampaignUI, setCampaignUINavigation, openCampaignPanel } from './ui/campaign-ui.js';
+
 // ========== FUNÇÕES DE NAVEGAÇÃO ==========
 
 /**
@@ -518,6 +523,9 @@ async function initMap() {
     // 3. Inicializa sistema de progresso
     initProgress();
 
+    // 3.5. Inicia a campanha ativa
+    initCampaign();
+
     // 4. Configura POIs
     let poisToLoad = [];
     if (hasCustomPOIs()) {
@@ -581,6 +589,11 @@ async function init() {
         setCharacterUINavigation(setScreen);
         setPOIUICallbacks(goToMap, () => startARCombat(handleVictory, handleDefeat, goToMap));
         setupPOIGlobalInteraction();
+
+        // Sistema de Campanhas
+        setCampaignUINavigation(setScreen, goToMap);
+        initWorldState();
+        initCampaignUI();
 
         // Setup de listeners
         setupUIListeners();

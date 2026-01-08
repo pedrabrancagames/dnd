@@ -4,12 +4,12 @@
 
 import './styles/main.css';
 import './styles/event-modal.css';
-import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
+// Leaflet CSS agora é carregado via CDN no index.html ou importado pelo map-manager
+// import 'leaflet/dist/leaflet.css'; 
 
 import { checkCompatibility, renderIncompatibleScreen } from './lib/compatibility.js';
 import { signIn, signUp, getSession, getPlayer, createPlayer, onAuthStateChange } from './lib/supabase.js';
-import { getCurrentPosition, startWatching, onPositionChange } from './lib/gps.js';
+import { getCurrentPosition, startWatching, onPositionChange, getLastPosition } from './lib/gps.js';
 import { getCellId, getNearbyCells, getCellBiome, getCellCenter } from './lib/cells.js';
 import { getMonstersByBiome, getMonstersByCR, selectRandomMonster, createMonsterInstance } from './data/monsters.js';
 import { gameState, setPlayer, setScreen, startCombat, endCombat, getClassIcon, updateDerivedStats, performRest } from './game/state.js';
@@ -35,9 +35,12 @@ import {
     playClickSound
 } from './lib/audio-manager.js';
 
-// Leaflet map instance
-let map = null;
-let playerMarker = null;
+// Novos módulos de Mapa e Campanha
+import { initMap as initGameMap } from './game/map-manager.js';
+import geofenceManager from './lib/geofence.js';
+import { CAMPAIGNS, generateTestPOIs } from './data/campaigns.js';
+
+// Estado local
 let monsterMarkers = [];
 
 /**
@@ -46,10 +49,10 @@ let monsterMarkers = [];
 function goToMap() {
     setScreen('map');
     // Força Leaflet a recalcular tamanho após a tela ficar visível
+    // A função initGameMap já cuida da instância do mapa, 
+    // mas se precisarmos de acesso direto podemos exportar do manager
     setTimeout(() => {
-        if (map) {
-            map.invalidateSize();
-        }
+        window.dispatchEvent(new Event('resize'));
     }, 100);
     updateMapHUD();
 }
@@ -449,64 +452,46 @@ function setupUIListeners() {
  * Inicializa o mapa
  */
 async function initMap() {
+    console.log('🗺️ Inicializando Mapa e Campanha...');
     setScreen('map');
+    updateMapHUD();
 
-    // Obtém posição inicial
+    // 1. Obtém posição inicial
     const position = await getCurrentPosition(true);
-
     if (!position) {
         console.error('Não foi possível obter a localização');
         return;
     }
 
-    // Inicializa o Leaflet
-    const mapContainer = document.getElementById('map-container');
+    // 2. Configura a Campanha (Modo Teste: Gera POIs ao redor do jogador)
+    // Em produção, usaríamos CAMPAIGNS['plague_of_orcus'].pois direto
+    console.log('📍 Gerando POIs de teste ao redor do jogador...');
+    const testPOIs = generateTestPOIs(position.lat, position.lng);
+    geofenceManager.loadPOIs(testPOIs);
+    geofenceManager.startMonitoring();
 
-    if (!map) {
-        map = L.map(mapContainer, {
-            zoomControl: false,
-            attributionControl: false
-        }).setView([position.lat, position.lng], 18);
+    // 3. Inicializa o Mapa Visual
+    initGameMap();
 
-        // Tile layer dark
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            maxZoom: 19
-        }).addTo(map);
-
-        // Marcador do jogador
-        const playerIcon = L.divIcon({
-            className: 'player-marker',
-            iconSize: [40, 40],
-            iconAnchor: [20, 20]
-        });
-
-        playerMarker = L.marker([position.lat, position.lng], { icon: playerIcon }).addTo(map);
-    }
-
-    // Atualiza HUD
-    updateMapHUD();
-
-    // Spawn monstros iniciais
-    spawnMonstersInNearby(position.lat, position.lng);
-
-    // Começa a monitorar posição
+    // 4. Lógica de monstros aleatórios (Mantida do original, mas adaptada)
+    // Começa a monitorar posição para spawn de mobs randômicos
     startWatching(true);
-    onPositionChange((coords) => {
-        if (map && playerMarker) {
-            playerMarker.setLatLng([coords.lat, coords.lng]);
-            map.panTo([coords.lat, coords.lng]);
 
-            // Atualiza célula atual e spawna monstros
-            const newCellId = getCellId(coords.lat, coords.lng);
-            if (gameState.currentCell?.id !== newCellId) {
-                gameState.currentCell = {
-                    id: newCellId,
-                    biome: getCellBiome(newCellId, coords.lat, coords.lng)
-                };
-                spawnMonstersInNearby(coords.lat, coords.lng);
-            }
+    // O MapManager já atualiza o marcador do player. 
+    // Aqui focamos na lógica de jogo (monstros, biomas)
+    onPositionChange((coords) => {
+        // Atualiza célula atual e spawna monstros
+        const newCellId = getCellId(coords.lat, coords.lng);
+        if (gameState.currentCell?.id !== newCellId) {
+            gameState.currentCell = {
+                id: newCellId,
+                biome: getCellBiome(newCellId, coords.lat, coords.lng)
+            };
+            // spawnMonstersInNearby(coords.lat, coords.lng); // Comentado para focar no teste de POIs primeiro
         }
     });
+
+    console.log('✅ Mapa inicializado com POIs de campanha!');
 }
 
 /**

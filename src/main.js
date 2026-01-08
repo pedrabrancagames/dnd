@@ -151,8 +151,69 @@ async function init() {
 }
 
 /**
- * Configura a bússola para rotacionar com a orientação do dispositivo
+ * Mostra notificação de POI encontrado
+ * @param {Object} poi 
  */
+function showPOINotification(poi) {
+    const notif = document.getElementById('poi-notification');
+    if (!notif) return;
+
+    document.getElementById('poi-notif-icon').textContent = poi.icon;
+    document.getElementById('poi-notif-name').textContent = poi.name;
+    document.getElementById('poi-notif-desc').textContent = poi.description;
+
+    const actionBtn = document.getElementById('poi-action-btn');
+    const closeBtn = document.getElementById('poi-close-btn');
+
+    // Configura texto do botão baseado no tipo
+    let actionText = 'Interagir';
+    if (poi.type === 'combat' || poi.type === 'boss') actionText = '⚔️ Lutar';
+    else if (poi.type === 'clue') actionText = '🔍 Investigar';
+    else if (poi.type === 'npc') actionText = '🗣️ Falar';
+
+    actionBtn.textContent = actionText;
+
+    // Configura ação
+    actionBtn.onclick = () => {
+        handlePOIInteraction(poi);
+        hidePOINotification();
+    };
+
+    closeBtn.onclick = () => {
+        hidePOINotification();
+    };
+
+    notif.classList.remove('hidden');
+}
+
+/**
+ * Esconde notificação de POI
+ */
+function hidePOINotification() {
+    const notif = document.getElementById('poi-notification');
+    if (notif) notif.classList.add('hidden');
+}
+
+/**
+ * Lida com interação em um POI
+ */
+function handlePOIInteraction(poi) {
+    console.log('Interagindo com:', poi.name);
+
+    if (poi.type === 'npc') {
+        alert(`🗣️ ${poi.name}: "Olá, aventureiro! Tenho uma missão para você..."`);
+    }
+    else if (poi.type === 'clue') {
+        startExplorationAR();
+    }
+    else if (poi.type === 'combat' || poi.type === 'boss') {
+        // Simula encontro de combate
+        // Idealmente buscaria o monstro do banco de dados
+        alert(`⚔️ Você encontrou inimigos: ${poi.monsterId || 'Monstros'}! Preparando combate...`);
+        // Aqui conectaríamos com startCombat()
+    }
+}
+
 function setupCompass() {
     const compassArrow = document.querySelector('.compass-arrow');
     const compass = document.getElementById('compass');
@@ -488,6 +549,21 @@ async function initMap() {
                 biome: getCellBiome(newCellId, coords.lat, coords.lng)
             };
             // spawnMonstersInNearby(coords.lat, coords.lng); // Comentado para focar no teste de POIs primeiro
+        }
+    });
+
+    // 5. Configura Listeners de Geofence
+    geofenceManager.onGeofenceEvent((event, poi, distance) => {
+        console.log(`[Geofence] Evento: ${event} em ${poi.name} (${Math.round(distance)}m)`);
+
+        if (event === 'enter') {
+            showPOINotification(poi);
+
+            // Vibração se suportado
+            if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+            playSuccessSound();
+        } else if (event === 'exit') {
+            hidePOINotification();
         }
     });
 

@@ -752,7 +752,7 @@ export async function startExplorationAR({ event, onFound, onClick, onEnd } = {}
         xrSession = await navigator.xr.requestSession('immersive-ar', {
             requiredFeatures: ['hit-test', 'local-floor'],
             optionalFeatures: ['dom-overlay'],
-            domOverlay: { root: document.getElementById('exploration-ar-screen') }
+            domOverlay: { root: document.body }
         });
 
         // Configura o renderer para a sessão

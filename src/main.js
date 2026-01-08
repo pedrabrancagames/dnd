@@ -3,6 +3,7 @@
  */
 
 import './styles/main.css';
+import './styles/event-modal.css';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
@@ -16,7 +17,7 @@ import { playerAttack, monsterAttack, isMonsterDefeated, isPlayerDefeated, castD
 import { generateExplorationEvent, resolveEvent } from './game/exploration.js';
 import { generateLoot, getRarityColor, getItemById } from './data/items.js';
 import { startARSession, endARSession, showMonsterDamageEffect, showMonsterDeathEffect, isARSessionActive, showEquippedWeapon, animateWeaponAttack } from './ar/ar-manager.js';
-import { startExplorationAR, endExplorationAR, isExplorationARSupported, showSuccessEffect, showFailureEffect } from './ar/ar-exploration.js';
+import { startExplorationAR, endExplorationAR, isExplorationARSupported, isExplorationARActive, showSuccessEffect, showFailureEffect } from './ar/ar-exploration.js';
 import { grantXP, getXPProgress, getXPForLevel, getTotalXPForLevel, spendAttributePoint } from './game/progression.js';
 import { getClassDefinition, useClassAbility, getAbilityCooldownRemaining } from './game/classes.js';
 import { initInventory, addItemToInventory, equipItem, unequipItem, useItem, getInventoryWithDetails, getEquippedItem, recalculateEquipmentStats } from './game/inventory.js';
@@ -366,9 +367,15 @@ function setupUIListeners() {
     document.getElementById('dodge-btn')?.addEventListener('click', handleDodge);
 
     // Exploração
+    // Exploração
     document.getElementById('explore-btn')?.addEventListener('click', handleExplore);
-    document.getElementById('close-event-btn')?.addEventListener('click', () => {
+    document.getElementById('close-event-btn')?.addEventListener('click', async () => {
         document.getElementById('event-screen').classList.remove('active');
+        // Se estiver em AR, encerra e volta para o mapa
+        if (isExplorationARActive()) {
+            await endExplorationAR();
+        }
+        goToMap();
     });
 
     // Cancelar exploração AR
@@ -1087,10 +1094,10 @@ function onExplorationObjectFound(event, object) {
 async function onExplorationObjectClicked(event) {
     console.log('🖱️ Objeto clicado:', event.title);
 
-    // Encerra sessão AR de exploração
-    await endExplorationAR();
+    // NÃO encerra a sessão AR aqui. 
+    // Mantemos o AR rodando no fundo e mostramos o modal por cima.
 
-    // Mostra modal de opções
+    // Mostra modal de opções (agora como overlay)
     showEventModal(event);
 }
 

@@ -11,7 +11,7 @@ import { checkCompatibility, renderIncompatibleScreen } from './lib/compatibilit
 import { signIn, signUp, getSession, getPlayer, createPlayer, onAuthStateChange } from './lib/supabase.js';
 import { getCurrentPosition, startWatching, onPositionChange, getLastPosition } from './lib/gps.js';
 import { getCellId, getNearbyCells, getCellBiome, getCellCenter } from './lib/cells.js';
-import { getMonstersByBiome, getMonstersByCR, selectRandomMonster, createMonsterInstance } from './data/monsters.js';
+import { getMonstersByBiome, getMonstersByCR, selectRandomMonster, createMonsterInstance, getMonsterById } from './data/monsters.js';
 import { gameState, setPlayer, setScreen, startCombat, endCombat, getClassIcon, updateDerivedStats, performRest } from './game/state.js';
 import { playerAttack, monsterAttack, isMonsterDefeated, isPlayerDefeated, castDamageSpell, useHealingPotion, attemptFlee, playerDodge } from './game/combat.js';
 import { generateExplorationEvent, resolveEvent } from './game/exploration.js';
@@ -202,17 +202,77 @@ function handlePOIInteraction(poi) {
     console.log('Interagindo com:', poi.name);
 
     if (poi.type === 'npc') {
+        // Por enquanto, mostra diálogo simples
         alert(`🗣️ ${poi.name}: "Olá, aventureiro! Tenho uma missão para você..."`);
     }
     else if (poi.type === 'clue') {
+        // Inicia exploração AR para encontrar objeto
         startExplorationAR();
     }
     else if (poi.type === 'combat' || poi.type === 'boss') {
-        // Simula encontro de combate
-        // Idealmente buscaria o monstro do banco de dados
-        alert(`⚔️ Você encontrou inimigos: ${poi.monsterId || 'Monstros'}! Preparando combate...`);
-        // Aqui conectaríamos com startCombat()
+        // Inicia combate real!
+        startPOICombat(poi);
     }
+    else if (poi.type === 'sanctuary') {
+        // Santuário - oferece descanso
+        const rest = confirm('🏠 Você encontrou um santuário. Deseja descansar?');
+        if (rest) {
+            const result = performRest('long');
+            alert(result.message);
+        }
+    }
+}
+
+/**
+ * Inicia combate a partir de um POI
+ * @param {Object} poi 
+ */
+function startPOICombat(poi) {
+    console.log(`⚔️ Iniciando combate do POI: ${poi.name}`);
+
+    // Determina qual monstro usar
+    let monsterTemplate = null;
+
+    if (poi.monsterId) {
+        // POI tem monstro específico
+        monsterTemplate = getMonsterById(poi.monsterId);
+    }
+
+    if (!monsterTemplate) {
+        // Fallback: seleciona monstro aleatório baseado no nível do jogador
+        const playerLevel = gameState.player?.level || 1;
+        const maxCR = poi.type === 'boss' ? playerLevel : playerLevel / 2;
+        const pool = getMonstersByCR(maxCR);
+
+        if (pool.length > 0) {
+            monsterTemplate = selectRandomMonster(pool);
+        } else {
+            console.error('Nenhum monstro disponível para este combate');
+            alert('❌ Erro: Nenhum inimigo encontrado neste local.');
+            return;
+        }
+    }
+
+    // Cria instância do monstro
+    const monster = createMonsterInstance(monsterTemplate, poi.id);
+
+    // Se for boss, aumenta HP
+    if (poi.type === 'boss') {
+        monster.isBoss = true;
+        monster.maxHp = Math.floor(monster.maxHp * 1.5);
+        monster.currentHp = monster.maxHp;
+    }
+
+    // Define como monstro atual e inicia combate
+    gameState.currentMonster = monster;
+
+    // Mostra notificação de encontro e vai para combate
+    playMonsterGrowl();
+
+    // Pequeno delay para drama e depois inicia AR
+    setTimeout(() => {
+        startARCombat();
+    }, 500);
 }
 
 function setupCompass() {

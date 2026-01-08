@@ -62,7 +62,7 @@ function setupAdminListeners() {
         savePOI();
     });
 
-    // Auto-preencher ícone baseado no tipo
+    // Auto-preencher ícone baseado no tipo e mostrar/esconder campo de monstro
     document.getElementById('poi-type')?.addEventListener('change', (e) => {
         const iconMap = {
             'npc': '🧙',
@@ -74,6 +74,12 @@ function setupAdminListeners() {
         const iconInput = document.getElementById('poi-icon');
         if (!iconInput.value || iconInput.value.length <= 2) {
             iconInput.value = iconMap[e.target.value] || '📍';
+        }
+
+        // Mostra/esconde campo de monstro
+        const monsterRow = document.getElementById('monster-select-row');
+        if (monsterRow) {
+            monsterRow.style.display = (e.target.value === 'combat' || e.target.value === 'boss') ? 'block' : 'none';
         }
     });
 
@@ -148,7 +154,10 @@ function savePOI() {
         lng,
         radius,
         description,
-        chapter: 1 // Pode ser expandido depois
+        monsterId: (type === 'combat' || type === 'boss')
+            ? (document.getElementById('poi-monster')?.value.trim() || null)
+            : null,
+        chapter: 1
     };
 
     if (editingPOIId) {
@@ -185,6 +194,13 @@ function editPOI(poiId) {
     document.getElementById('poi-icon').value = poi.icon;
     document.getElementById('poi-radius').value = poi.radius;
     document.getElementById('poi-description').value = poi.description || '';
+    document.getElementById('poi-monster').value = poi.monsterId || '';
+
+    // Mostra/esconde campo de monstro
+    const monsterRow = document.getElementById('monster-select-row');
+    if (monsterRow) {
+        monsterRow.style.display = (poi.type === 'combat' || poi.type === 'boss') ? 'block' : 'none';
+    }
 
     switchTab('add-poi');
 }
@@ -217,6 +233,8 @@ function clearForm() {
     document.getElementById('poi-icon').value = '🧙';
     document.getElementById('poi-radius').value = '30';
     document.getElementById('poi-description').value = '';
+    document.getElementById('poi-monster').value = '';
+    document.getElementById('monster-select-row').style.display = 'none';
     editingPOIId = null;
 }
 

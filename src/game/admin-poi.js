@@ -5,7 +5,7 @@
 
 import { getLastPosition } from '../lib/gps.js';
 import geofenceManager from '../lib/geofence.js';
-import { renderPOIs } from './map-manager.js';
+import { renderPOIs, clearPOIMarkers } from './map-manager.js';
 
 const STORAGE_KEY = 'dd_campaign_pois';
 
@@ -355,10 +355,17 @@ function loadPOIsFromStorage() {
  * Recarrega os POIs no mapa
  */
 function reloadPOIs() {
+    // Limpa marcadores visuais do mapa
+    clearPOIMarkers();
+
+    // Limpa e recarrega dados do geofence
     geofenceManager.clearPOIs();
     geofenceManager.loadPOIs(customPOIs);
-    // Nota: renderPOIs() precisa ser chamado após o mapa ser reinicializado
-    // Por enquanto, os markers antigos permanecem, mas os novos serão adicionados
+
+    // Re-renderiza os marcadores
+    renderPOIs();
+
+    console.log('[Admin] POIs recarregados no mapa');
 }
 
 /**

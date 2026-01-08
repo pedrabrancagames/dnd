@@ -104,15 +104,41 @@ function updatePlayerPosition(coords) {
 }
 
 /**
+ * Limpa todos os marcadores de POI do mapa
+ */
+export function clearPOIMarkers() {
+    if (!map) return;
+
+    // Remove marcadores
+    Object.values(poiMarkers).forEach(marker => {
+        map.removeLayer(marker);
+    });
+    poiMarkers = {};
+
+    // Remove círculos (precisamos rastrear eles também)
+    // Por simplicidade, vamos limpar todas as camadas de círculo
+    map.eachLayer(layer => {
+        if (layer instanceof L.Circle && layer.options.dashArray) {
+            map.removeLayer(layer);
+        }
+    });
+
+    console.log('[Map] Marcadores de POI limpos');
+}
+
+/**
  * Renderiza os POIs no mapa
  */
 export function renderPOIs() {
     if (!map) return;
 
-    // Limpa marcadores antigos (opcional, se atualizar tudo)
-    // Para simplificar, vamos apenas adicionar/atualizar
-
     const pois = geofenceManager.activePOIs;
+
+    // Se não há POIs, apenas retorna
+    if (pois.length === 0) {
+        console.log('[Map] Nenhum POI para renderizar');
+        return;
+    }
 
     pois.forEach(poi => {
         if (poiMarkers[poi.id]) {
@@ -122,7 +148,6 @@ export function renderPOIs() {
         const color = getPOIColor(poi.type);
         const icon = createCustomIcon(poi.icon, color);
 
-        // @ts-ignore
         const marker = L.marker([poi.lat, poi.lng], { icon: icon })
             .addTo(map)
             .bindPopup(`
@@ -136,7 +161,6 @@ export function renderPOIs() {
             `);
 
         // Adiciona círculo da geofence
-        // @ts-ignore
         L.circle([poi.lat, poi.lng], {
             color: color,
             fillColor: color,
@@ -147,6 +171,8 @@ export function renderPOIs() {
 
         poiMarkers[poi.id] = marker;
     });
+
+    console.log(`[Map] Renderizados ${pois.length} POIs`);
 }
 
 /**

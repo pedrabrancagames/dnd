@@ -275,6 +275,20 @@ function startPOICombat(poi) {
     }, 500);
 }
 
+/**
+ * Função global para interagir com POI a partir do popup do mapa
+ * Chamada pelo onclick do botão no popup
+ */
+window.interactWithPOI = (poiDataEncoded) => {
+    try {
+        const poi = JSON.parse(decodeURIComponent(poiDataEncoded));
+        console.log('[POI] Interação via popup:', poi.name);
+        handlePOIInteraction(poi);
+    } catch (e) {
+        console.error('[POI] Erro ao decodificar POI:', e);
+    }
+};
+
 function setupCompass() {
     const compassArrow = document.querySelector('.compass-arrow');
     const compass = document.getElementById('compass');

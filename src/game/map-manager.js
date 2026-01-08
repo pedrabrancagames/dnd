@@ -148,15 +148,21 @@ export function renderPOIs() {
         const color = getPOIColor(poi.type);
         const icon = createCustomIcon(poi.icon, color);
 
+        // Determina o botão de ação baseado no tipo
+        const actionButton = getActionButton(poi);
+
         const marker = L.marker([poi.lat, poi.lng], { icon: icon })
             .addTo(map)
             .bindPopup(`
                 <div class="poi-popup">
                     <h3>${poi.icon} ${poi.name}</h3>
-                    <p>${poi.description}</p>
-                    <button onclick="window.startNavigation('${poi.id}')" class="btn-nav">
-                        🧭 Navegar
-                    </button>
+                    <p>${poi.description || 'Sem descrição'}</p>
+                    <div class="poi-popup-buttons">
+                        ${actionButton}
+                        <button onclick="window.startNavigation('${poi.id}')" class="btn-nav btn-secondary-small">
+                            🧭 Navegar
+                        </button>
+                    </div>
                 </div>
             `);
 
@@ -173,6 +179,27 @@ export function renderPOIs() {
     });
 
     console.log(`[Map] Renderizados ${pois.length} POIs`);
+}
+
+/**
+ * Retorna o botão de ação apropriado para o tipo de POI
+ */
+function getActionButton(poi) {
+    const poiData = encodeURIComponent(JSON.stringify(poi));
+
+    switch (poi.type) {
+        case 'combat':
+        case 'boss':
+            return `<button onclick="window.interactWithPOI(${poiData})" class="btn-nav btn-combat">⚔️ Lutar</button>`;
+        case 'clue':
+            return `<button onclick="window.interactWithPOI(${poiData})" class="btn-nav btn-clue">🔍 Investigar</button>`;
+        case 'npc':
+            return `<button onclick="window.interactWithPOI(${poiData})" class="btn-nav btn-npc">🗣️ Falar</button>`;
+        case 'sanctuary':
+            return `<button onclick="window.interactWithPOI(${poiData})" class="btn-nav btn-sanctuary">🏠 Descansar</button>`;
+        default:
+            return `<button onclick="window.interactWithPOI(${poiData})" class="btn-nav">✨ Interagir</button>`;
+    }
 }
 
 /**

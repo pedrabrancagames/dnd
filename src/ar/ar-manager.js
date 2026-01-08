@@ -643,3 +643,20 @@ export function getMonsterPosition() {
     const monster = scene?.getObjectByName('monster');
     return monster ? monster.position.clone() : null;
 }
+
+/**
+ * Mostra mensagem no AR
+ * @param {string} message 
+ */
+export function showARMessage(message) {
+    const container = document.getElementById('ar-messages');
+    if (!container) return;
+
+    const msg = document.createElement('div');
+    msg.className = 'ar-message';
+    msg.textContent = message;
+
+    container.appendChild(msg);
+
+    setTimeout(() => msg.remove(), 1500);
+}

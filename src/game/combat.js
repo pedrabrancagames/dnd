@@ -7,6 +7,7 @@ import { rollAttack, rollDamage, rollSave, getModifier, rollWithAdvantage, rollW
 import { gameState, recordAction, isOnCooldown, damagePlayer } from './state.js';
 import { getEquippedWeaponDamage } from './inventory.js';
 import { getClassDefinition } from './classes.js';
+import { SPELLS } from '../data/spells.js';
 
 /**
  * Resultado de um ataque
@@ -222,8 +223,6 @@ export function monsterAttack() {
         message
     };
 }
-
-import { SPELLS } from '../data/spells.js';
 
 /**
  * Reseta flags temporárias de combate do jogador

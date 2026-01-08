@@ -4,6 +4,7 @@
 
 import { gameState } from './state.js';
 import { getItemById } from '../data/items.js';
+import { getItemDisplayInfo } from './identification.js';
 import {
     fetchInventory,
     addToInventoryDB,
@@ -64,10 +65,6 @@ export async function initInventory() {
         }
     }
 }
-
-import { getItemDisplayInfo } from './identification.js';
-
-// ... imports anteriores mantidos ...
 
 /**
  * Adiciona um item ao inventário

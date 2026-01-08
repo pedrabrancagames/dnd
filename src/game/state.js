@@ -56,6 +56,9 @@ export function updateDerivedStats() {
     p.wisMod = getModifier(p.wis);
     p.chaMod = getModifier(p.cha);
 
+    // Bônus de proficiência - CALCULADO PRIMEIRO para uso nas skills
+    p.proficiencyBonus = Math.ceil(p.level / 4) + 1;
+
     // Calcula HP máximo baseado na classe
     const classHpDice = {
         warrior: 12,
@@ -78,7 +81,7 @@ export function updateDerivedStats() {
         gameState.hitDice.current = gameState.hitDice.max;
     }
 
-    // Perícias (Skills)
+    // Perícias (Skills) - Agora com proficiencyBonus já definido
     // Skill Mod = Ability Mod + (Proficiency se treinado)
     p.skills = {
         athletics: p.strMod + (p.class === 'warrior' ? p.proficiencyBonus : 0),
@@ -95,11 +98,9 @@ export function updateDerivedStats() {
         p.currentMana = p.maxMana;
     }
 
-    // AC base (sem armadura)
-    p.ac = 10 + p.dexMod + (p.armorBonus || 0);
-
-    // Bônus de proficiência
-    p.proficiencyBonus = Math.ceil(p.level / 4) + 1;
+    // AC base: 10 + DEX mod + bônus de equipamento (armadura/acessórios)
+    const equipAC = p.equipmentBonus?.ac || 0;
+    p.ac = 10 + p.dexMod + equipAC;
 
     // Modificador de ataque baseado na classe
     if (p.class === 'mage') {

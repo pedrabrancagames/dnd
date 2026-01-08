@@ -37,7 +37,7 @@ import {
 } from './lib/audio-manager.js';
 
 // Novos módulos de Mapa e Campanha
-import { initMap as initGameMap, updatePOIVisualState } from './game/map-manager.js';
+import { initMap as initGameMap, updatePOIVisualState, getMapInstance } from './game/map-manager.js';
 import geofenceManager from './lib/geofence.js';
 import { CAMPAIGNS, generateTestPOIs } from './data/campaigns.js';
 import { initAdminPanel, getCustomPOIs, hasCustomPOIs } from './game/admin-poi.js';
@@ -575,8 +575,6 @@ function setupUIListeners() {
     document.getElementById('attack-btn')?.addEventListener('click', handleAttack);
     document.getElementById('spell-btn')?.addEventListener('click', handleSpell);
     document.getElementById('item-btn')?.addEventListener('click', handleItem);
-    document.getElementById('item-btn')?.addEventListener('click', handleItem);
-    document.getElementById('item-btn')?.addEventListener('click', handleItem);
     document.getElementById('flee-btn')?.addEventListener('click', handleFlee);
     document.getElementById('dodge-btn')?.addEventListener('click', handleDodge);
 
@@ -760,8 +758,9 @@ async function spawnMonstersInNearby(lat, lng) {
     const nearbyCells = getNearbyCells(currentCellId, 2);
 
     // Remove marcadores antigos
+    const mapInstance = getMapInstance();
     monsterMarkers.forEach(marker => {
-        if (map) map.removeLayer(marker);
+        if (mapInstance) mapInstance.removeLayer(marker);
     });
     monsterMarkers = [];
     gameState.nearbyMonsters = [];
@@ -817,7 +816,8 @@ async function spawnMonstersInNearby(lat, lng) {
         // Cria marcador no mapa
         const cellCenter = getCellCenter(cellId);
 
-        if (map) {
+        const mapInst = getMapInstance();
+        if (mapInst) {
             const monsterIcon = L.divIcon({
                 className: `monster-marker ${monster.isBoss ? 'boss' : ''}`,
                 html: monster.emoji,
@@ -826,7 +826,7 @@ async function spawnMonstersInNearby(lat, lng) {
             });
 
             const marker = L.marker([cellCenter.lat, cellCenter.lng], { icon: monsterIcon })
-                .addTo(map)
+                .addTo(mapInst)
                 .on('click', () => selectMonster(monster));
 
             monsterMarkers.push(marker);
@@ -1159,10 +1159,9 @@ async function handleFlee() {
             console.error("Erro ao encerrar AR na fuga:", e);
         }
 
-        setScreen('map-screen');
         endCombat();
 
-        // Volta para o mapa usando a função correta
+        // Volta para o mapa
         setTimeout(() => goToMap(), 1000);
     } else {
         updateARHUD();
@@ -1440,11 +1439,12 @@ async function handleVictory() {
     }
 
     // Remove do mapa localmente
+    const mapRef = getMapInstance();
     const markerIndex = gameState.nearbyMonsters.findIndex(m => m.id === monster.id);
     if (markerIndex !== -1) {
         gameState.nearbyMonsters.splice(markerIndex, 1);
-        if (monsterMarkers[markerIndex]) {
-            map.removeLayer(monsterMarkers[markerIndex]);
+        if (monsterMarkers[markerIndex] && mapRef) {
+            mapRef.removeLayer(monsterMarkers[markerIndex]);
             monsterMarkers.splice(markerIndex, 1);
         }
     }

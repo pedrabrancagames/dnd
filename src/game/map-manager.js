@@ -353,3 +353,11 @@ function hideNavigationHUD() {
         compass.classList.remove('navigating');
     }
 }
+
+/**
+ * Retorna a instância do mapa Leaflet
+ * @returns {L.Map|null}
+ */
+export function getMapInstance() {
+    return map;
+}

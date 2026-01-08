@@ -781,14 +781,26 @@ export async function startExplorationAR({ event, onFound, onClick, onEnd } = {}
         explorationObject = await createExplorationObject(event);
 
         // Inicia o loop de renderização
+        // Inicia o loop de renderização
         explorationARActive = true;
         renderer.setAnimationLoop(renderExplorationFrame);
+
+        // Feedback inicial
+        const arMsg = document.getElementById('ar-messages');
+        if (arMsg) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'ar-message';
+            msgDiv.textContent = '👀 Olhe para o chão e mova o celular lentamente...';
+            arMsg.appendChild(msgDiv);
+            setTimeout(() => msgDiv.remove(), 4000);
+        }
 
         console.log('✅ Sessão AR de exploração iniciada');
         return true;
 
     } catch (error) {
         console.error('Erro ao iniciar sessão AR de exploração:', error);
+        alert('Erro ao iniciar AR: ' + error.message);
         return false;
     }
 }
@@ -867,15 +879,34 @@ function renderExplorationFrame(time, frame) {
                 reticle.matrix.fromArray(hitPose.transform.matrix);
                 reticle.matrix.decompose(reticle.position, reticle.quaternion, reticle.scale);
 
-                // Posiciona o objeto após 2 segundos de detecção de superfície
-                // (simula procurar pelo ambiente)
+                // Mostra reticle girando para indicar busca
+                reticle.rotation.z += 0.05;
+
+                // Posiciona o objeto automaticamente se encontrar superfície
                 if (!isObjectPlaced) {
-                    const hitMatrix = new THREE.Matrix4().fromArray(hitPose.transform.matrix);
-                    placeExplorationObject(hitMatrix);
+                    // Delay artificial para dar tempo do usuário ver o reticle
+                    if (!this.surfaceDetectTime) this.surfaceDetectTime = Date.now();
+
+                    if (Date.now() - this.surfaceDetectTime > 1500) {
+                        const hitMatrix = new THREE.Matrix4().fromArray(hitPose.transform.matrix);
+                        placeExplorationObject(hitMatrix);
+                    } else {
+                        // Feedback visual (pode usar um elemento DOM se o showARMessage não estiver acessível)
+                        const arMsg = document.getElementById('ar-messages');
+                        if (arMsg && !arMsg.textContent.includes('Detectando')) {
+                            // Cria msg temporária
+                            const msgDiv = document.createElement('div');
+                            msgDiv.className = 'ar-message';
+                            msgDiv.textContent = '🔍 Analisando terreno...';
+                            arMsg.appendChild(msgDiv);
+                            setTimeout(() => msgDiv.remove(), 1000);
+                        }
+                    }
                 }
             }
         } else {
             reticle.visible = false;
+            this.surfaceDetectTime = null;
         }
     }
 

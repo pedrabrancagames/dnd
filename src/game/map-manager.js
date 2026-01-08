@@ -185,20 +185,21 @@ export function renderPOIs() {
  * Retorna o botão de ação apropriado para o tipo de POI
  */
 function getActionButton(poi) {
-    const poiData = encodeURIComponent(JSON.stringify(poi));
+    // Passa apenas o ID do POI - mais seguro para HTML
+    const poiId = poi.id;
 
     switch (poi.type) {
         case 'combat':
         case 'boss':
-            return `<button onclick="window.interactWithPOI(${poiData})" class="btn-nav btn-combat">⚔️ Lutar</button>`;
+            return `<button onclick="window.interactWithPOIById('${poiId}')" class="btn-nav btn-combat">⚔️ Lutar</button>`;
         case 'clue':
-            return `<button onclick="window.interactWithPOI(${poiData})" class="btn-nav btn-clue">🔍 Investigar</button>`;
+            return `<button onclick="window.interactWithPOIById('${poiId}')" class="btn-nav btn-clue">🔍 Investigar</button>`;
         case 'npc':
-            return `<button onclick="window.interactWithPOI(${poiData})" class="btn-nav btn-npc">🗣️ Falar</button>`;
+            return `<button onclick="window.interactWithPOIById('${poiId}')" class="btn-nav btn-npc">🗣️ Falar</button>`;
         case 'sanctuary':
-            return `<button onclick="window.interactWithPOI(${poiData})" class="btn-nav btn-sanctuary">🏠 Descansar</button>`;
+            return `<button onclick="window.interactWithPOIById('${poiId}')" class="btn-nav btn-sanctuary">🏠 Descansar</button>`;
         default:
-            return `<button onclick="window.interactWithPOI(${poiData})" class="btn-nav">✨ Interagir</button>`;
+            return `<button onclick="window.interactWithPOIById('${poiId}')" class="btn-nav">✨ Interagir</button>`;
     }
 }
 

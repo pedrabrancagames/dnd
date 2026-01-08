@@ -278,15 +278,15 @@ function startPOICombat(poi) {
 
 /**
  * Função global para interagir com POI a partir do popup do mapa
- * Chamada pelo onclick do botão no popup
+ * Busca o POI pelo ID no geofenceManager
  */
-window.interactWithPOI = (poiDataEncoded) => {
-    try {
-        const poi = JSON.parse(decodeURIComponent(poiDataEncoded));
+window.interactWithPOIById = (poiId) => {
+    const poi = geofenceManager.activePOIs.find(p => p.id === poiId);
+    if (poi) {
         console.log('[POI] Interação via popup:', poi.name);
         handlePOIInteraction(poi);
-    } catch (e) {
-        console.error('[POI] Erro ao decodificar POI:', e);
+    } else {
+        console.error('[POI] POI não encontrado:', poiId);
     }
 };
 

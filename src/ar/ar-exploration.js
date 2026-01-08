@@ -176,7 +176,7 @@ function initExplorationScene() {
     renderer.xr.enabled = true;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    
+
     // CRUCIAL: Fundo transparente para ver a câmera AR
     renderer.setClearColor(0x000000, 0);
     renderer.setClearAlpha(0);
@@ -198,14 +198,47 @@ function initExplorationScene() {
         style.id = 'ar-fixes';
         style.textContent = `
             #exploration-ar-screen { background: transparent !important; }
-            #exploration-ar-screen canvas { position: absolute; top: 0; left: 0; z-index: 0; }
-            #exploration-hud { position: relative; z-index: 10; pointer-events: none; }
-            #exploration-hud * { pointer-events: auto; }
-            body.ar-active { background: transparent !important; }
-            html.ar-active { background: transparent !important; }
+            #exploration-ar-screen canvas { 
+                position: absolute !important; 
+                top: 0 !important; 
+                left: 0 !important; 
+                z-index: 0 !important; 
+                background: transparent !important;
+            }
+            #exploration-hud { 
+                position: absolute !important; 
+                top: 0 !important;
+                left: 0 !important;
+                width: 100% !important;
+                z-index: 10 !important; 
+                pointer-events: none !important;
+                background: transparent !important;
+            }
+            #exploration-hud * { pointer-events: auto !important; }
+            .exploration-instructions {
+                background: rgba(0,0,0,0.7) !important;
+                padding: 12px 20px !important;
+                border-radius: 8px !important;
+                margin: 20px !important;
+            }
+            body.ar-active, html.ar-active { background: transparent !important; }
+            body.ar-active #app { background: transparent !important; }
         `;
         document.head.appendChild(style);
     }
+
+    // Força inline styles para garantir transparência
+    if (arScreen) {
+        arScreen.style.background = 'transparent';
+        arScreen.style.backgroundColor = 'transparent';
+    }
+
+    // Configura canvas inline styles
+    renderer.domElement.style.position = 'absolute';
+    renderer.domElement.style.top = '0';
+    renderer.domElement.style.left = '0';
+    renderer.domElement.style.zIndex = '0';
+    renderer.domElement.style.background = 'transparent';
 
     // Scene
     scene = new THREE.Scene();
@@ -786,9 +819,20 @@ export async function startExplorationAR({ event, onFound, onClick, onEnd } = {}
         const viewerSpace = await xrSession.requestReferenceSpace('viewer');
         xrHitTestSource = await xrSession.requestHitTestSource({ space: viewerSpace });
 
-        // Ativa modo transparente
+        // Ativa modo transparente - Classes CSS
         document.body.classList.add('ar-active');
         document.documentElement.classList.add('ar-active');
+
+        // FORÇA inline styles para garantir transparência total
+        document.body.style.background = 'transparent';
+        document.body.style.backgroundColor = 'transparent';
+        document.documentElement.style.background = 'transparent';
+        document.documentElement.style.backgroundColor = 'transparent';
+        const appEl = document.getElementById('app');
+        if (appEl) {
+            appEl.style.background = 'transparent';
+            appEl.style.backgroundColor = 'transparent';
+        }
 
         // Handle session end
         xrSession.addEventListener('end', () => {
@@ -798,6 +842,17 @@ export async function startExplorationAR({ event, onFound, onClick, onEnd } = {}
 
             document.body.classList.remove('ar-active');
             document.documentElement.classList.remove('ar-active');
+
+            // Restaura estilos originais
+            document.body.style.background = '';
+            document.body.style.backgroundColor = '';
+            document.documentElement.style.background = '';
+            document.documentElement.style.backgroundColor = '';
+            const appEl = document.getElementById('app');
+            if (appEl) {
+                appEl.style.background = '';
+                appEl.style.backgroundColor = '';
+            }
 
             if (onExplorationEnd) onExplorationEnd();
         });

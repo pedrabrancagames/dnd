@@ -109,7 +109,8 @@ export async function getSession() {
             session,
             user: session?.user || null
         };
-    } catch {
+    } catch (e) {
+        console.error('Erro ao obter sessão:', e);
         return { session: null, user: null };
     }
 }

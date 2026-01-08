@@ -28,7 +28,8 @@ export const gameState = {
     lastRestTime: { short: 0, long: 0 },
     restCooldowns: { short: 5 * 60 * 1000, long: 30 * 60 * 1000 }, // 5min short, 30min long
     skills: {},
-    hitDice: { current: 0, max: 0, die: 8 }
+    hitDice: { current: 0, max: 0, die: 8 },
+    playerBuffs: [] // Sistema de buffs temporários
 };
 
 /**

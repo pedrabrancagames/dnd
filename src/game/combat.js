@@ -387,7 +387,7 @@ export function castSpell(spellId) {
 export const castDamageSpell = castSpell;
 
 /**
- * Usa poção de cura
+ * Usa poção de cura do inventário
  * @returns {Object}
  */
 export function useHealingPotion() {
@@ -399,11 +399,29 @@ export function useHealingPotion() {
         return { success: false, message: 'Aguarde o cooldown' };
     }
 
-    // TODO: Verificar inventário (consumir item)
-    // Por enquanto, infinito para teste ou se tiver no inventário
-    // Idealmente chamar inventory.useItem
+    // Busca uma poção de cura no inventário
+    const inventory = gameState.player.inventory || [];
+    const potionIds = ['potion_healing', 'potion_healing_greater', 'potion_healing_superior'];
 
-    const healAmount = rollDamage('2d4+2', false).total;
+    // Procura a primeira poção disponível (prioriza as menores)
+    let potionItem = null;
+    for (const potionId of potionIds) {
+        potionItem = inventory.find(i => i.itemId === potionId && i.quantity > 0);
+        if (potionItem) break;
+    }
+
+    if (!potionItem) {
+        return { success: false, message: 'Sem poções de cura!' };
+    }
+
+    // Determina a cura baseada no tipo de poção
+    const healDice = {
+        'potion_healing': '2d4+2',
+        'potion_healing_greater': '4d4+4',
+        'potion_healing_superior': '8d4+8'
+    };
+
+    const healAmount = rollDamage(healDice[potionItem.itemId] || '2d4+2', false).total;
 
     const oldHp = gameState.player.currentHp;
     gameState.player.currentHp = Math.min(
@@ -411,6 +429,14 @@ export function useHealingPotion() {
         gameState.player.currentHp + healAmount
     );
     const actualHeal = gameState.player.currentHp - oldHp;
+
+    // Consome a poção do inventário
+    potionItem.quantity -= 1;
+    if (potionItem.quantity <= 0) {
+        // Remove item do inventário local
+        const idx = inventory.indexOf(potionItem);
+        if (idx > -1) inventory.splice(idx, 1);
+    }
 
     recordAction();
 

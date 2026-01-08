@@ -1167,7 +1167,6 @@ async function handleFlee() {
         updateARHUD();
 
         if (isPlayerDefeated()) {
-            clearInterval(monsterTurnInterval);
             handleDefeat();
         }
     }

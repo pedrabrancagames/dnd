@@ -227,6 +227,19 @@
               <small style="color: #888;">Deixe vazio para monstro aleatório baseado no nível</small>
             </div>
 
+            <div class="form-row" id="dialogue-select-row" style="display:none;">
+              <label for="poi-dialogue">Diálogo do NPC</label>
+              <select id="poi-dialogue-type">
+                <option value="custom">Texto customizado</option>
+                <option value="quest_giver">Quest Giver (Missão)</option>
+                <option value="merchant">Mercador</option>
+                <option value="simple_greeting">Aldeão (Saudação)</option>
+              </select>
+              <textarea id="poi-dialogue-text" placeholder="O que o NPC diz quando você fala com ele..." rows="3"
+                style="margin-top: 8px;"></textarea>
+              <small style="color: #888;">Selecione um template ou escreva seu próprio texto</small>
+            </div>
+
             <div class="form-row">
               <label for="poi-icon">Ícone (emoji)</label>
               <input type="text" id="poi-icon" placeholder="🧙" maxlength="2">
@@ -545,6 +558,22 @@
           <button id="poi-action-btn" class="btn-primary">Interagir</button>
           <button id="poi-close-btn" class="btn-secondary">Dispensar</button>
         </div>
+      </div>
+    </div>
+
+    <!-- Dialogue Modal -->
+    <div id="dialogue-modal" class="dialogue-modal">
+      <div class="dialogue-container">
+        <div class="dialogue-header">
+          <div class="dialogue-npc-portrait" id="dialogue-npc-icon">🧙</div>
+          <div class="dialogue-npc-info">
+            <h3 id="dialogue-npc-name">NPC</h3>
+          </div>
+        </div>
+        <div class="dialogue-content">
+          <p id="dialogue-text" class="dialogue-text"></p>
+        </div>
+        <div id="dialogue-options" class="dialogue-options"></div>
       </div>
     </div>
   </div>

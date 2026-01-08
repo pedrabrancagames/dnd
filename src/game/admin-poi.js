@@ -62,7 +62,7 @@ function setupAdminListeners() {
         savePOI();
     });
 
-    // Auto-preencher ícone baseado no tipo e mostrar/esconder campo de monstro
+    // Auto-preencher ícone baseado no tipo e mostrar/esconder campos específicos
     document.getElementById('poi-type')?.addEventListener('change', (e) => {
         const iconMap = {
             'npc': '🧙',
@@ -80,6 +80,12 @@ function setupAdminListeners() {
         const monsterRow = document.getElementById('monster-select-row');
         if (monsterRow) {
             monsterRow.style.display = (e.target.value === 'combat' || e.target.value === 'boss') ? 'block' : 'none';
+        }
+
+        // Mostra/esconde campo de diálogo
+        const dialogueRow = document.getElementById('dialogue-select-row');
+        if (dialogueRow) {
+            dialogueRow.style.display = (e.target.value === 'npc') ? 'block' : 'none';
         }
     });
 
@@ -156,6 +162,14 @@ function savePOI() {
         description,
         monsterId: (type === 'combat' || type === 'boss')
             ? (document.getElementById('poi-monster')?.value.trim() || null)
+            : null,
+        dialogueId: (type === 'npc')
+            ? (document.getElementById('poi-dialogue-type')?.value !== 'custom'
+                ? document.getElementById('poi-dialogue-type')?.value
+                : null)
+            : null,
+        dialogueText: (type === 'npc')
+            ? (document.getElementById('poi-dialogue-text')?.value.trim() || null)
             : null,
         chapter: 1
     };

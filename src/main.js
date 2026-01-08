@@ -41,6 +41,7 @@ import { initMap as initGameMap } from './game/map-manager.js';
 import geofenceManager from './lib/geofence.js';
 import { CAMPAIGNS, generateTestPOIs } from './data/campaigns.js';
 import { initAdminPanel, getCustomPOIs, hasCustomPOIs } from './game/admin-poi.js';
+import { startDialogue, createSimpleDialogue, SAMPLE_DIALOGUES } from './game/dialogue-system.js';
 
 // Estado local
 let monsterMarkers = [];
@@ -203,8 +204,8 @@ function handlePOIInteraction(poi) {
     console.log('Interagindo com:', poi.name);
 
     if (poi.type === 'npc') {
-        // Por enquanto, mostra diálogo simples
-        alert(`🗣️ ${poi.name}: "Olá, aventureiro! Tenho uma missão para você..."`);
+        // Usa sistema de diálogos
+        startNPCDialogue(poi);
     }
     else if (poi.type === 'clue') {
         // Inicia exploração AR para encontrar objeto
@@ -221,6 +222,39 @@ function handlePOIInteraction(poi) {
             const result = performRest('long');
             alert(result.message);
         }
+    }
+}
+
+/**
+ * Inicia diálogo com NPC
+ */
+function startNPCDialogue(poi) {
+    // Verifica se o POI tem um dialogueId configurado
+    if (poi.dialogueId && SAMPLE_DIALOGUES[poi.dialogueId]) {
+        // Usa diálogo pré-definido
+        startDialogue(poi.dialogueId, (dialogue) => {
+            console.log('[NPC] Diálogo concluído:', dialogue.id);
+        });
+    } else if (poi.dialogueText) {
+        // Usa texto customizado do POI
+        const dialogue = createSimpleDialogue(
+            poi.name,
+            poi.icon || '👤',
+            poi.dialogueText
+        );
+        startDialogue(dialogue, () => {
+            console.log('[NPC] Diálogo simples concluído');
+        });
+    } else {
+        // Fallback: diálogo genérico
+        const dialogue = createSimpleDialogue(
+            poi.name,
+            poi.icon || '👤',
+            `Olá, aventureiro! Bem-vindo a ${poi.name}. Que bons ventos o trazem aqui?`
+        );
+        startDialogue(dialogue, () => {
+            console.log('[NPC] Diálogo genérico concluído');
+        });
     }
 }
 

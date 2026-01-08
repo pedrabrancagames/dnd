@@ -39,6 +39,7 @@ import {
 import { initMap as initGameMap } from './game/map-manager.js';
 import geofenceManager from './lib/geofence.js';
 import { CAMPAIGNS, generateTestPOIs } from './data/campaigns.js';
+import { initAdminPanel, getCustomPOIs, hasCustomPOIs } from './game/admin-poi.js';
 
 // Estado local
 let monsterMarkers = [];
@@ -524,10 +525,19 @@ async function initMap() {
         return;
     }
 
-    // 2. Configura a Campanha (Modo Teste: Gera POIs ao redor do jogador)
-    console.log('📍 Gerando POIs de teste ao redor do jogador...');
-    const testPOIs = generateTestPOIs(position.lat, position.lng);
-    geofenceManager.loadPOIs(testPOIs);
+    // 2. Inicializa o painel de Admin
+    initAdminPanel();
+
+    // 3. Configura POIs (prioriza customizados, senão usa teste)
+    let poisToLoad = [];
+    if (hasCustomPOIs()) {
+        console.log('📍 Usando POIs customizados do Admin...');
+        poisToLoad = getCustomPOIs();
+    } else {
+        console.log('📍 Nenhum POI customizado. Gerando POIs de teste ao redor do jogador...');
+        poisToLoad = generateTestPOIs(position.lat, position.lng);
+    }
+    geofenceManager.loadPOIs(poisToLoad);
 
     // 3. Registra Listeners de Geofence ANTES de iniciar monitoramento
     geofenceManager.onGeofenceEvent((event, poi, distance) => {

@@ -172,6 +172,95 @@
           <button id="enter-ar-btn" class="btn-primary">Entrar em Combate AR</button>
         </div>
       </div>
+
+      <!-- Admin Button (discreto) -->
+      <button id="admin-toggle-btn" class="admin-toggle" title="Modo Admin">⚙️</button>
+    </div>
+
+    <!-- Admin Panel -->
+    <div id="admin-screen" class="screen overlay">
+      <div class="admin-container">
+        <div class="admin-header">
+          <h1>🗺️ Editor de Campanha</h1>
+          <button id="close-admin-btn" class="btn-close">×</button>
+        </div>
+
+        <div class="admin-tabs">
+          <button class="admin-tab active" data-tab="add-poi">Adicionar POI</button>
+          <button class="admin-tab" data-tab="list-pois">Lista de POIs</button>
+          <button class="admin-tab" data-tab="export">Exportar</button>
+        </div>
+
+        <!-- Tab: Adicionar POI -->
+        <div id="tab-add-poi" class="admin-tab-content active">
+          <p class="admin-instruction">📍 Toque no mapa para selecionar a localização, ou use sua posição atual.</p>
+
+          <form id="poi-form">
+            <div class="form-row">
+              <label>Coordenadas</label>
+              <div class="coords-display">
+                <input type="text" id="poi-lat" placeholder="Latitude" readonly>
+                <input type="text" id="poi-lng" placeholder="Longitude" readonly>
+              </div>
+              <button type="button" id="use-my-location-btn" class="btn-secondary">📍 Usar minha localização</button>
+            </div>
+
+            <div class="form-row">
+              <label for="poi-name">Nome do Local</label>
+              <input type="text" id="poi-name" placeholder="Ex: Praça Central" required>
+            </div>
+
+            <div class="form-row">
+              <label for="poi-type">Tipo</label>
+              <select id="poi-type" required>
+                <option value="npc">🧙 NPC (Quest Giver)</option>
+                <option value="clue">🔮 Pista (AR Object)</option>
+                <option value="combat">⚔️ Combate</option>
+                <option value="boss">☠️ Boss</option>
+                <option value="sanctuary">🏠 Santuário (Descanso)</option>
+              </select>
+            </div>
+
+            <div class="form-row">
+              <label for="poi-icon">Ícone (emoji)</label>
+              <input type="text" id="poi-icon" placeholder="🧙" maxlength="2">
+            </div>
+
+            <div class="form-row">
+              <label for="poi-radius">Raio de ativação (metros)</label>
+              <input type="number" id="poi-radius" value="30" min="10" max="100">
+            </div>
+
+            <div class="form-row">
+              <label for="poi-description">Descrição</label>
+              <textarea id="poi-description" placeholder="Uma breve descrição do local..." rows="2"></textarea>
+            </div>
+
+            <button type="submit" class="btn-primary btn-full">✅ Adicionar POI</button>
+          </form>
+        </div>
+
+        <!-- Tab: Lista de POIs -->
+        <div id="tab-list-pois" class="admin-tab-content">
+          <div id="pois-list" class="pois-list">
+            <p class="empty-list">Nenhum POI cadastrado ainda.</p>
+          </div>
+        </div>
+
+        <!-- Tab: Exportar -->
+        <div id="tab-export" class="admin-tab-content">
+          <p>Exporte a configuração para salvar ou compartilhar:</p>
+          <textarea id="export-json" readonly rows="10"></textarea>
+          <div class="export-buttons">
+            <button id="copy-json-btn" class="btn-secondary">📋 Copiar JSON</button>
+            <button id="import-json-btn" class="btn-secondary">📥 Importar JSON</button>
+          </div>
+          <div class="form-row" id="import-section" style="display:none;">
+            <textarea id="import-json" placeholder="Cole o JSON aqui..." rows="5"></textarea>
+            <button id="confirm-import-btn" class="btn-primary">Confirmar Import</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- AR Screen -->

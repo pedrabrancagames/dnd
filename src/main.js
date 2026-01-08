@@ -4,6 +4,7 @@
 
 import './styles/main.css';
 import './styles/event-modal.css';
+import './styles/poi-styles.css';
 // Leaflet CSS agora é carregado via CDN no index.html ou importado pelo map-manager
 // import 'leaflet/dist/leaflet.css'; 
 

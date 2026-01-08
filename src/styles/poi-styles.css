@@ -1,0 +1,359 @@
+/* ===== Map POI Popups ===== */
+.poi-popup {
+    text-align: center;
+    min-width: 200px;
+    color: #333;
+}
+
+.poi-popup h3 {
+    margin: 0 0 8px 0;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.poi-popup p {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    color: #666;
+}
+
+.poi-popup-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.btn-nav {
+    background: #4a90e2;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    width: 100%;
+}
+
+.btn-nav:hover {
+    opacity: 0.9;
+}
+
+.btn-combat {
+    background: #dc3545;
+}
+
+.btn-clue {
+    background: #9b59b6;
+}
+
+.btn-npc {
+    background: #17a2b8;
+}
+
+.btn-sanctuary {
+    background: #28a745;
+}
+
+.btn-secondary-small {
+    background: #6c757d;
+    font-size: 0.9em;
+}
+
+.custom-map-marker {
+    transition: transform 0.2s;
+}
+
+.custom-map-marker:hover {
+    transform: scale(1.1);
+    z-index: 1000 !important;
+}
+
+.compass.navigating {
+    border: 2px solid #ffd700;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+    background: rgba(26, 26, 46, 0.9);
+}
+
+.compass.navigating .compass-arrow {
+    color: #ffd700;
+}
+
+/* POI Notification */
+.poi-notification {
+    position: fixed;
+    bottom: 30px;
+    left: 20px;
+    right: 20px;
+    z-index: 2000;
+    display: flex;
+    justify-content: center;
+    pointer-events: none;
+    transition: transform 0.4s, opacity 0.4s;
+}
+
+.poi-notification.hidden {
+    transform: translateY(100%);
+    opacity: 0;
+}
+
+.poi-content {
+    background: rgba(22, 22, 35, 0.95);
+    backdrop-filter: blur(16px);
+    border: 1px solid #ffd700;
+    border-radius: 12px;
+    padding: 16px;
+    width: 100%;
+    max-width: 400px;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    pointer-events: auto;
+}
+
+.poi-icon {
+    width: 50px;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    border: 2px solid #ffd700;
+}
+
+.poi-info h3 {
+    margin: 0;
+    color: #ffd700;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+}
+
+#poi-notif-name {
+    margin: 4px 0;
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: white;
+}
+
+.poi-desc {
+    margin: 2px 0;
+    font-size: 0.85rem;
+    color: #aaa;
+}
+
+.poi-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 4px;
+}
+
+.poi-actions button {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    border-radius: 6px;
+    cursor: pointer;
+    border: none;
+    font-weight: 600;
+}
+
+#poi-action-btn {
+    background: #ffd700;
+    color: black;
+}
+
+#poi-close-btn {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+/* Admin Panel */
+.admin-toggle {
+    position: absolute;
+    bottom: 100px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.7);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    font-size: 1.5rem;
+    cursor: pointer;
+    z-index: 200;
+}
+
+.admin-toggle:hover {
+    background: rgba(255, 215, 0, 0.2);
+    border-color: #ffd700;
+}
+
+.admin-container {
+    background: #12121a;
+    width: 100%;
+    max-width: 500px;
+    max-height: 90vh;
+    border-radius: 16px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    background: #1a1a2e;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.admin-header h1 {
+    font-size: 1.2rem;
+    color: #ffd700;
+}
+
+.admin-tabs {
+    display: flex;
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.admin-tab {
+    flex: 1;
+    padding: 12px;
+    background: transparent;
+    border: none;
+    color: #a0a0a0;
+    font-size: 0.85rem;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+}
+
+.admin-tab.active {
+    color: #ffd700;
+    border-bottom-color: #ffd700;
+    background: rgba(255, 215, 0, 0.1);
+}
+
+.admin-tab-content {
+    display: none;
+    padding: 16px;
+    overflow-y: auto;
+    max-height: calc(90vh - 150px);
+}
+
+.admin-tab-content.active {
+    display: block;
+}
+
+.admin-instruction {
+    font-size: 0.9rem;
+    color: #a0a0a0;
+    margin-bottom: 16px;
+    padding: 12px;
+    background: rgba(255, 215, 0, 0.1);
+    border-radius: 8px;
+    border-left: 3px solid #ffd700;
+}
+
+.coords-display {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.coords-display input {
+    flex: 1;
+    font-size: 0.85rem;
+}
+
+.btn-full {
+    width: 100%;
+    padding: 14px;
+    font-size: 1rem;
+}
+
+.pois-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.poi-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.poi-item-icon {
+    font-size: 1.5rem;
+    width: 40px;
+    text-align: center;
+}
+
+.poi-item-info {
+    flex: 1;
+}
+
+.poi-item-name {
+    font-weight: bold;
+    color: white;
+}
+
+.poi-item-type {
+    font-size: 0.8rem;
+    color: #a0a0a0;
+}
+
+.poi-item-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.poi-item-actions button {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-edit {
+    background: #4a9eff;
+    color: white;
+}
+
+.btn-delete {
+    background: #dc3545;
+    color: white;
+}
+
+.empty-list {
+    text-align: center;
+    color: #666;
+    padding: 20px;
+}
+
+#export-json,
+#import-json {
+    width: 100%;
+    font-family: monospace;
+    font-size: 0.8rem;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: #aaa;
+    padding: 12px;
+    resize: none;
+}
+
+.export-buttons {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}

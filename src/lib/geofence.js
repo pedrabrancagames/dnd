@@ -56,6 +56,13 @@ export class GeofenceManager {
         this.unsubscribeGPS = onPositionChange((coords) => {
             this.checkGeofences(coords);
         });
+
+        // Verifica imediatamente se já está dentro de algum POI
+        const lastPos = getLastPosition();
+        if (lastPos) {
+            console.log('[Geofence] Verificando posição inicial...');
+            this.checkGeofences(lastPos);
+        }
     }
 
     /**

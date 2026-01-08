@@ -525,34 +525,11 @@ async function initMap() {
     }
 
     // 2. Configura a Campanha (Modo Teste: Gera POIs ao redor do jogador)
-    // Em produção, usaríamos CAMPAIGNS['plague_of_orcus'].pois direto
     console.log('📍 Gerando POIs de teste ao redor do jogador...');
     const testPOIs = generateTestPOIs(position.lat, position.lng);
     geofenceManager.loadPOIs(testPOIs);
-    geofenceManager.startMonitoring();
 
-    // 3. Inicializa o Mapa Visual
-    initGameMap();
-
-    // 4. Lógica de monstros aleatórios (Mantida do original, mas adaptada)
-    // Começa a monitorar posição para spawn de mobs randômicos
-    startWatching(true);
-
-    // O MapManager já atualiza o marcador do player. 
-    // Aqui focamos na lógica de jogo (monstros, biomas)
-    onPositionChange((coords) => {
-        // Atualiza célula atual e spawna monstros
-        const newCellId = getCellId(coords.lat, coords.lng);
-        if (gameState.currentCell?.id !== newCellId) {
-            gameState.currentCell = {
-                id: newCellId,
-                biome: getCellBiome(newCellId, coords.lat, coords.lng)
-            };
-            // spawnMonstersInNearby(coords.lat, coords.lng); // Comentado para focar no teste de POIs primeiro
-        }
-    });
-
-    // 5. Configura Listeners de Geofence
+    // 3. Registra Listeners de Geofence ANTES de iniciar monitoramento
     geofenceManager.onGeofenceEvent((event, poi, distance) => {
         console.log(`[Geofence] Evento: ${event} em ${poi.name} (${Math.round(distance)}m)`);
 
@@ -564,6 +541,25 @@ async function initMap() {
             playSuccessSound();
         } else if (event === 'exit') {
             hidePOINotification();
+        }
+    });
+
+    // 4. Agora inicia o monitoramento (os listeners já estão prontos)
+    geofenceManager.startMonitoring();
+
+    // 5. Inicializa o Mapa Visual
+    initGameMap();
+
+    // 6. Lógica de monstros aleatórios
+    startWatching(true);
+
+    onPositionChange((coords) => {
+        const newCellId = getCellId(coords.lat, coords.lng);
+        if (gameState.currentCell?.id !== newCellId) {
+            gameState.currentCell = {
+                id: newCellId,
+                biome: getCellBiome(newCellId, coords.lat, coords.lng)
+            };
         }
     });
 
